@@ -1,102 +1,109 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'screens/home_screen.dart';
-import 'screens/add_task_screen.dart';
-import 'screens/calendar_screen.dart';
-import 'screens/profile_screen.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'screens/splash_screen.dart';
 
-void main() {
-  runApp(const TaskAIApp());
-}
+// Définition des couleurs du thème
+const Color primaryColor = Color(0xFF3498db);
+const Color secondaryColor = Color(0xFF2ecc71);
+const Color backgroundColor = Color(0xFFecf0f1);
+const Color textColor = Color(0xFF2c3e50);
 
-class TaskAIApp extends StatelessWidget {
-  const TaskAIApp({super.key});
+class TaskManagerApp extends StatelessWidget {
+  const TaskManagerApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'TaskAI',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        // Use Google Fonts directly in textTheme
-        textTheme: GoogleFonts.poppinsTextTheme(
-          Theme.of(context).textTheme,
-        ),
-        appBarTheme: AppBarTheme(
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
-          elevation: 0,
-        ),
-      ),
-      // Remove 'const' from here since MainScreen is stateful
-      home: MainScreen(), // ← Changed this line
+      title: 'Task Manager',
       debugShowCheckedModeBanner: false,
-    );
-  }
-}
-
-class MainScreen extends StatefulWidget {
-  // Remove 'const' from constructor too
-  const MainScreen({super.key}); // ← This is fine as constructor
-
-  @override
-  State<MainScreen> createState() => _MainScreenState();
-}
-
-class _MainScreenState extends State<MainScreen> {
-  int _currentIndex = 0;
-
-  final List<Widget> _screens = [
-    const HomeScreen(), // These can be const if they're stateless
-    const CalendarScreen(),
-    const AddTaskScreen(),
-    const ProfileScreen(),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: _screens[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          if (index == 2) {
-            // Open add task screen as modal
-            showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              builder: (context) => const AddTaskScreen(),
-            );
-          } else {
-            setState(() {
-              _currentIndex = index;
-            });
-          }
-        },
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Accueil',
+      theme: ThemeData(
+        primaryColor: primaryColor,
+        primarySwatch: MaterialColor(primaryColor.value, const <int, Color>{
+          50: Color(0xFFE3F2FD),
+          100: Color(0xFFBBDEFB),
+          200: Color(0xFF90CAF9),
+          300: Color(0xFF64B5F6),
+          400: Color(0xFF42A5F5),
+          500: primaryColor,
+          600: Color(0xFF1E88E5),
+          700: Color(0xFF1976D2),
+          800: Color(0xFF1565C0),
+          900: Color(0xFF0D47A1),
+        }),
+        scaffoldBackgroundColor: backgroundColor,
+        textTheme: const TextTheme(
+          bodyLarge: TextStyle(color: textColor),
+          bodyMedium: TextStyle(color: textColor),
+          titleLarge: TextStyle(color: textColor),
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          iconTheme: IconThemeData(color: textColor),
+          titleTextStyle: TextStyle(color: textColor, fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        cardTheme: CardThemeData(
+          elevation: 4,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          shadowColor: Colors.black.withOpacity(0.1),
+        ),
+        // Style des champs de texte
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today_outlined),
-            activeIcon: Icon(Icons.calendar_today),
-            label: 'Calendrier',
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.add_circle_outlined),
-            activeIcon: Icon(Icons.add_circle),
-            label: 'Ajouter',
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: primaryColor, width: 1.5),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outlined),
-            activeIcon: Icon(Icons.person),
-            label: 'Profil',
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.red, width: 1.5),
           ),
-        ],
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.red, width: 1.5),
+          ),
+        ),
+        // Style des boutons
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: primaryColor,
+            foregroundColor: Colors.white,
+            minimumSize: const Size(double.infinity, 50),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            elevation: 4,
+            shadowColor: primaryColor.withOpacity(0.3),
+            textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+        ),
       ),
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('en', ''),
+        Locale('fr', ''),
+      ],
+      locale: const Locale('fr', ''),
+      home: const SplashScreen(),
     );
   }
+}
+
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const TaskManagerApp());
 }

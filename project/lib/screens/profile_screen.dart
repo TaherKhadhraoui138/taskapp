@@ -1,185 +1,91 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../models/user.dart';
+import '../services/auth_service.dart';
+import 'login_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
+  final User user;
+  const ProfileScreen({Key? key, required this.user}) : super(key: key);
+
+  void _logout(BuildContext context) async {
+    await AuthService().logout();
+    if (context.mounted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+            (Route<dynamic> route) => false,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Profil',
-          style: GoogleFonts.poppins(
-            fontSize: 24,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        title: const Text('Profile'),
+        automaticallyImplyLeading: false,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Profile Header
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.blue[50],
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
+            CircleAvatar(
+              radius: 60,
+              backgroundImage: NetworkImage(user.profilePictureUrl),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              user.name,
+              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              user.email,
+              style: const TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+            const SizedBox(height: 40),
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+              child: Column(
                 children: [
-                  const CircleAvatar(
-                    radius: 30,
-                    backgroundColor: Colors.blue,
-                    child: Icon(
-                      Icons.person,
-                      color: Colors.white,
-                      size: 30,
-                    ),
+                  ListTile(
+                    leading: Icon(Icons.settings, color: Theme.of(context).primaryColor),
+                    title: const Text('Settings'),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Paramètres non implémentés.')),
+                      );
+                    },
                   ),
-                  const SizedBox(width: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'John Doe',
-                        style: GoogleFonts.poppins(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Text(
-                        'john.doe@email.com',
-                        style: GoogleFonts.poppins(
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: Icon(Icons.help_outline, color: Theme.of(context).primaryColor),
+                    title: const Text('Help & Support'),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Aide et support non implémentés.')),
+                      );
+                    },
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
-
-            // Statistics
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _StatItem(count: '12', label: 'Tâches\ncomplétées'),
-                _StatItem(count: '3', label: 'Tâches\nen cours'),
-                _StatItem(count: '2', label: 'Tâches\nen retard'),
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            // Settings
-            Expanded(
-              child: ListView(
-                children: [
-                  _SettingsItem(
-                    icon: Icons.notifications,
-                    title: 'Notifications',
-                    onTap: () {},
-                  ),
-                  _SettingsItem(
-                    icon: Icons.calendar_today,
-                    title: 'Synchronisation calendrier',
-                    onTap: () {},
-                  ),
-                  _SettingsItem(
-                    icon: Icons.security,
-                    title: 'Confidentialité',
-                    onTap: () {},
-                  ),
-                  _SettingsItem(
-                    icon: Icons.help,
-                    title: 'Aide & Support',
-                    onTap: () {},
-                  ),
-                  _SettingsItem(
-                    icon: Icons.info,
-                    title: 'À propos',
-                    onTap: () {},
-                  ),
-                  _SettingsItem(
-                    icon: Icons.logout,
-                    title: 'Déconnexion',
-                    onTap: () {},
-                    color: Colors.red,
-                  ),
-                ],
+            const SizedBox(height: 20),
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+              child: ListTile(
+                leading: const Icon(Icons.logout, color: Colors.red),
+                title: const Text('Logout', style: TextStyle(color: Colors.red)),
+                onTap: () => _logout(context),
               ),
             ),
           ],
         ),
       ),
-    );
-  }
-}
-
-class _StatItem extends StatelessWidget {
-  final String count;
-  final String label;
-
-  const _StatItem({
-    required this.count,
-    required this.label,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          count,
-          style: GoogleFonts.poppins(
-            fontSize: 24,
-            fontWeight: FontWeight.w600,
-            color: Colors.blue,
-          ),
-        ),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: GoogleFonts.poppins(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _SettingsItem extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final VoidCallback onTap;
-  final Color? color;
-
-  const _SettingsItem({
-    required this.icon,
-    required this.title,
-    required this.onTap,
-    this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(
-        icon,
-        color: color ?? Colors.grey[700],
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: color ?? Colors.black,
-        ),
-      ),
-      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-      onTap: onTap,
     );
   }
 }
