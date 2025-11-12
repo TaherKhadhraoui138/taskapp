@@ -1,110 +1,139 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:table_calendar/table_calendar.dart';
+import 'package:intl/intl.dart';
+import '../models/task.dart';
+import '../services/task_service.dart';
+import '../widgets/task_list_item.dart';
+import '../main.dart'; // Import pour accéder à primaryColor
 
 class CalendarScreen extends StatefulWidget {
-  const CalendarScreen({super.key});
+  const CalendarScreen({Key? key}) : super(key: key);
 
   @override
   State<CalendarScreen> createState() => _CalendarScreenState();
 }
 
 class _CalendarScreenState extends State<CalendarScreen> {
-  CalendarFormat _calendarFormat = CalendarFormat.month;
-  DateTime _focusedDay = DateTime.now();
-  DateTime? _selectedDay;
+  final TaskService _taskService = TaskService();
+  DateTime _selectedDay = DateTime.now();
+  List<Task> _tasksForSelectedDay = [];
+  Map<DateTime, List<Task>> _tasksByDay = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTasks();
+  }
+
+  Future<void> _loadTasks() async {
+    final allTasks = await _taskService.loadTasks();
+    final Map<DateTime, List<Task>> tasksByDay = {};
+
+    for (var task in allTasks.where((t) => t.deadline != null)) {
+      final day = DateTime(task.deadline!.year, task.deadline!.month, task.deadline!.day);
+      if (!tasksByDay.containsKey(day)) {
+        tasksByDay[day] = [];
+      }
+      tasksByDay[day]!.add(task);
+    }
+
+    setState(() {
+      _tasksByDay = tasksByDay;
+      _updateTasksForSelectedDay(_selectedDay);
+    });
+  }
+
+  void _updateTasksForSelectedDay(DateTime day) {
+    final normalizedDay = DateTime(day.year, day.month, day.day);
+    setState(() {
+      _selectedDay = normalizedDay;
+      _tasksForSelectedDay = _tasksByDay[normalizedDay] ?? [];
+      _tasksForSelectedDay.sort((a, b) => a.deadline!.compareTo(b.deadline!));
+    });
+  }
+
+  void _toggleTaskCompletion(Task task) async {
+    final updatedTask = task.copyWith(isCompleted: !task.isCompleted);
+    await _taskService.updateTask(updatedTask);
+    _loadTasks();
+  }
+
+  Future<void> _deleteTask(Task task) async {
+    await _taskService.deleteTask(task.id);
+    _loadTasks();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Calendrier',
-          style: GoogleFonts.poppins(
-            fontSize: 24,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        title: const Text('Calendar'),
+        automaticallyImplyLeading: false,
       ),
       body: Column(
         children: [
-          TableCalendar(
-            firstDay: DateTime.utc(2020, 1, 1),
-            lastDay: DateTime.utc(2030, 12, 31),
-            focusedDay: _focusedDay,
-            calendarFormat: _calendarFormat,
-            selectedDayPredicate: (day) {
-              return isSameDay(_selectedDay, day);
-            },
-            onDaySelected: (selectedDay, focusedDay) {
-              setState(() {
-                _selectedDay = selectedDay;
-                _focusedDay = focusedDay;
-              });
-            },
-            onFormatChanged: (format) {
-              setState(() {
-                _calendarFormat = format;
-              });
-            },
-            onPageChanged: (focusedDay) {
-              _focusedDay = focusedDay;
-            },
-            calendarStyle: CalendarStyle(
-              todayDecoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.3),
-                shape: BoxShape.circle,
-              ),
-              selectedDecoration: const BoxDecoration(
-                color: Colors.blue,
-                shape: BoxShape.circle,
-              ),
-            ),
-            headerStyle: HeaderStyle(
-              formatButtonVisible: false,
-              titleCentered: true,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
+          // Sélecteur de date simple
+          Container(
+            color: primaryColor.withOpacity(0.1),
+            padding: const EdgeInsets.all(10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Tâches du ${_selectedDay?.day ?? DateTime.now().day}/${_selectedDay?.month ?? DateTime.now().month}',
-                  style: GoogleFonts.poppins(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_ios, size: 18),
+                  onPressed: () {
+                    _updateTasksForSelectedDay(_selectedDay.subtract(const Duration(days: 1)));
+                  },
+                ),
+                GestureDetector(
+                  onTap: () async {
+                    final DateTime? picked = await showDatePicker(
+                      context: context,
+                      initialDate: _selectedDay,
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime(2030),
+                    );
+                    if (picked != null && picked != _selectedDay) {
+                      _updateTasksForSelectedDay(picked);
+                    }
+                  },
+                  child: Text(
+                    DateFormat('EEEE, d MMMM yyyy', 'fr').format(_selectedDay),
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor),
                   ),
                 ),
-                const SizedBox(height: 16),
-                // Here you would list tasks for the selected day
-                _buildTaskItem('Réunion équipe', '09:00', Colors.blue),
-                _buildTaskItem('Déjeuner client', '12:30', Colors.orange),
-                _buildTaskItem('Rapport trimestriel', '15:00', Colors.red),
+                IconButton(
+                  icon: const Icon(Icons.arrow_forward_ios, size: 18),
+                  onPressed: () {
+                    _updateTasksForSelectedDay(_selectedDay.add(const Duration(days: 1)));
+                  },
+                ),
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTaskItem(String title, String time, Color color) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: Container(
-          width: 4,
-          height: 40,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(2),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _loadTasks,
+              child: _tasksForSelectedDay.isEmpty
+                  ? Center(child: Text('Aucune tâche prévue pour le ${DateFormat('d MMMM', 'fr').format(_selectedDay)}.'))
+                  : ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                itemCount: _tasksForSelectedDay.length,
+                itemBuilder: (context, index) {
+                  final task = _tasksForSelectedDay[index];
+                  return TaskListItem(
+                    key: ValueKey(task.id),
+                    task: task,
+                    onTap: () {
+                      // Logique de navigation vers l'édition de tâche
+                    },
+                    onToggle: () => _toggleTaskCompletion(task),
+                    onDelete: () => _deleteTask(task),
+                  );
+                },
+              ),
+            ),
           ),
-        ),
-        title: Text(title),
-        subtitle: Text(time),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+        ],
       ),
     );
   }
