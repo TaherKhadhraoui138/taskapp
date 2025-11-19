@@ -29,6 +29,7 @@ class User {
       'email': email,
       'name': name,
       'profilePictureUrl': profilePictureUrl,
+      'passwordHash': passwordHash,
 
     };
   }
