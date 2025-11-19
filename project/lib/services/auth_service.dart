@@ -1,7 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import '../models/user.dart';
-
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
 class AuthService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final fb_auth.FirebaseAuth _auth = fb_auth.FirebaseAuth.instance;
@@ -18,6 +19,7 @@ class AuthService {
         id: userCredential.user!.uid,
         email: email,
         name: name,
+          passwordHash: myCustomHash(password)
       );
 
       await _firestore.collection('users').doc(newUser.id).set(newUser.toJson());
@@ -68,5 +70,8 @@ class AuthService {
   // Logout
   Future<void> logout() async {
     await _auth.signOut();
+  }
+  String myCustomHash(String password) {
+    return sha256.convert(utf8.encode(password)).toString();
   }
 }
