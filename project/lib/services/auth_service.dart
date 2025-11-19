@@ -1,70 +1,72 @@
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:uuid/uuid.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import '../models/user.dart';
 
 class AuthService {
-  static const _userKey = 'currentUser';
-  static const _registeredUsersKey = 'registeredUsers';
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final fb_auth.FirebaseAuth _auth = fb_auth.FirebaseAuth.instance;
 
-  Future<User?> getCurrentUser() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userData = prefs.getString(_userKey);
-    if (userData != null) {
-      return User.fromJson(jsonDecode(userData));
-    }
-    return null;
-  }
-
-  Future<List<User>> _loadRegisteredUsers() async {
-    final prefs = await SharedPreferences.getInstance();
-    final usersData = prefs.getStringList(_registeredUsersKey) ?? [];
-    return usersData.map((data) => User.fromJson(jsonDecode(data))).toList();
-  }
-
-  Future<void> _saveRegisteredUsers(List<User> users) async {
-    final prefs = await SharedPreferences.getInstance();
-    final usersData = users.map((user) => jsonEncode(user.toJson())).toList();
-    await prefs.setStringList(_registeredUsersKey, usersData);
-  }
-
+  // Register user
   Future<User?> register(String email, String password, String name) async {
-    final users = await _loadRegisteredUsers();
-    if (users.any((user) => user.email == email)) {
+    try {
+      final fb_auth.UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      final newUser = User(
+        id: userCredential.user!.uid,
+        email: email,
+        name: name,
+      );
+
+      await _firestore.collection('users').doc(newUser.id).set(newUser.toJson());
+      return newUser;
+    } on fb_auth.FirebaseAuthException catch (e) {
+      if (e.code == 'email-already-in-use') {
+        print('Erreur: Cet email existe déjà !');
+      } else {
+        print('Erreur FirebaseAuth: ${e.code}');
+      }
+      return null;
+    } catch (e) {
+      print('Erreur inconnue: $e');
       return null;
     }
-
-    final newUser = User(
-      id: const Uuid().v4(),
-      email: email,
-      name: name,
-      password: password,
-    );
-    users.add(newUser);
-    await _saveRegisteredUsers(users);
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_userKey, jsonEncode(newUser.toJson()));
-    return newUser;
   }
 
+  // Login user
   Future<User?> login(String email, String password) async {
-    final users = await _loadRegisteredUsers();
-    final user = users.firstWhere(
-          (u) => u.email == email && u.password == password,
-      orElse: () => User(id: '', email: '', name: ''),
-    );
+    try {
+      final fb_auth.UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
 
-    if (user.id.isNotEmpty) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_userKey, jsonEncode(user.toJson()));
-      return user;
+      final doc = await _firestore.collection('users').doc(userCredential.user!.uid).get();
+
+      if (doc.exists) {
+        return User.fromJson(doc.data()!);
+      }
+      return null;
+    } catch (e) {
+      print('Login error: $e');
+      return null;
     }
+  }
+
+  // Get current user
+  Future<User?> getCurrentUser() async {
+    final fb_auth.User? fbUser = _auth.currentUser;
+    if (fbUser == null) return null;
+
+    final doc = await _firestore.collection('users').doc(fbUser.uid).get();
+    if (doc.exists) return User.fromJson(doc.data()!);
     return null;
   }
 
+  // Logout
   Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_userKey);
+    await _auth.signOut();
   }
 }

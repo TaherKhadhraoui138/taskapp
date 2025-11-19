@@ -29,7 +29,7 @@ class User {
       'email': email,
       'name': name,
       'profilePictureUrl': profilePictureUrl,
-      'password': password,
+
     };
   }
 }

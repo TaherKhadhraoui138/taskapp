@@ -1,40 +1,75 @@
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/task.dart';
 
 class TaskService {
-  static const _tasksKey = 'tasks';
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  // Get current user ID
+  String? get _currentUserId => _auth.currentUser?.uid;
+
+  // Load tasks for current user
   Future<List<Task>> loadTasks() async {
-    final prefs = await SharedPreferences.getInstance();
-    final tasksData = prefs.getStringList(_tasksKey) ?? [];
-    return tasksData.map((data) => Task.fromJson(jsonDecode(data))).toList();
+    if (_currentUserId == null) return [];
+
+    final snapshot = await _firestore
+        .collection('users')
+        .doc(_currentUserId)
+        .collection('tasks')
+        .orderBy('createdAt', descending: true)
+        .get();
+
+    return snapshot.docs
+        .map((doc) => Task.fromJson(doc.data()))
+        .toList();
   }
 
-  Future<void> saveTasks(List<Task> tasks) async {
-    final prefs = await SharedPreferences.getInstance();
-    final tasksData = tasks.map((task) => jsonEncode(task.toJson())).toList();
-    await prefs.setStringList(_tasksKey, tasksData);
-  }
-
+  // Add new task
   Future<void> addTask(Task task) async {
-    final tasks = await loadTasks();
-    tasks.add(task);
-    await saveTasks(tasks);
+    if (_currentUserId == null) return;
+
+    await _firestore
+        .collection('users')
+        .doc(_currentUserId)
+        .collection('tasks')
+        .doc(task.id)
+        .set(task.toJson());
   }
 
+  // Update task
   Future<void> updateTask(Task updatedTask) async {
-    final tasks = await loadTasks();
-    final index = tasks.indexWhere((t) => t.id == updatedTask.id);
-    if (index != -1) {
-      tasks[index] = updatedTask;
-      await saveTasks(tasks);
-    }
+    if (_currentUserId == null) return;
+
+    await _firestore
+        .collection('users')
+        .doc(_currentUserId)
+        .collection('tasks')
+        .doc(updatedTask.id)
+        .update(updatedTask.toJson());
   }
 
+  // Delete task
   Future<void> deleteTask(String taskId) async {
-    final tasks = await loadTasks();
-    tasks.removeWhere((t) => t.id == taskId);
-    await saveTasks(tasks);
+    if (_currentUserId == null) return;
+
+    await _firestore
+        .collection('users')
+        .doc(_currentUserId)
+        .collection('tasks')
+        .doc(taskId)
+        .delete();
+  }
+
+  // Toggle task completion
+  Future<void> toggleTaskCompletion(Task task) async {
+    if (_currentUserId == null) return;
+
+    await _firestore
+        .collection('users')
+        .doc(_currentUserId)
+        .collection('tasks')
+        .doc(task.id)
+        .update({'isCompleted': !task.isCompleted});
   }
 }
