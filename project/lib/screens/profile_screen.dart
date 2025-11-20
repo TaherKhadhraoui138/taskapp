@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:taskai/screens/settings_screen.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
+import 'about_screen.dart';
 import 'login_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -53,22 +55,18 @@ class ProfileScreen extends StatelessWidget {
                     leading: Icon(Icons.settings, color: Theme.of(context).primaryColor),
                     title: const Text('Settings'),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Paramètres non implémentés.')),
-                      );
-                    },
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                    ),
                   ),
-                  const Divider(height: 1),
+
                   ListTile(
                     leading: Icon(Icons.help_outline, color: Theme.of(context).primaryColor),
                     title: const Text('Help & Support'),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Aide et support non implémentés.')),
-                      );
-                    },
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const AboutScreen()),
+                    ),
                   ),
                 ],
               ),
