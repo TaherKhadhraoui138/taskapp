@@ -10,6 +10,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  image_picker: ^1.0.4
+  firebase_storage: ^11.5.6
   firebase_core: ^2.24.0
   firebase_auth: ^4.16.2
   cloud_firestore: ^4.13.2
@@ -20,6 +22,7 @@ dependencies:
   crypto: ^3.0.2
   provider: ^6.1.1
   shared_preferences: ^2.2.2
+
 
 dev_dependencies:
   flutter_test:

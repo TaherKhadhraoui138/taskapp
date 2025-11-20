@@ -40,17 +40,6 @@ class AboutScreen extends StatelessWidget {
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () {
-                showLicensePage(
-                  context: context,
-                  applicationName: _appName,
-                  applicationVersion: _version,
-                );
-              },
-              child: const Text('View Licenses'),
-            ),
-            const SizedBox(height: 12),
           ],
         ),
       ),
