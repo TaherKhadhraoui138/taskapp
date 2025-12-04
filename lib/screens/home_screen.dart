@@ -513,28 +513,31 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             width: 60,
                             height: 60,
                             child: Stack(
+                              alignment: Alignment.center,
                               children: [
-                                TweenAnimationBuilder<double>(
-                                  tween: Tween(begin: 0, end: progress),
-                                  duration: const Duration(milliseconds: 1000),
-                                  curve: Curves.easeOutCubic,
-                                  builder: (context, value, child) {
-                                    return CircularProgressIndicator(
-                                      value: value,
-                                      strokeWidth: 6,
-                                      backgroundColor: Colors.white.withOpacity(0.2),
-                                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                                    );
-                                  },
+                                SizedBox(
+                                  width: 60,
+                                  height: 60,
+                                  child: TweenAnimationBuilder<double>(
+                                    tween: Tween(begin: 0, end: progress),
+                                    duration: const Duration(milliseconds: 1000),
+                                    curve: Curves.easeOutCubic,
+                                    builder: (context, value, child) {
+                                      return CircularProgressIndicator(
+                                        value: value,
+                                        strokeWidth: 6,
+                                        backgroundColor: Colors.white.withOpacity(0.2),
+                                        valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                                      );
+                                    },
+                                  ),
                                 ),
-                                Center(
-                                  child: Text(
-                                    '${(progress * 100).toInt()}%',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
+                                Text(
+                                  '${(progress * 100).toInt()}%',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
                                   ),
                                 ),
                               ],
