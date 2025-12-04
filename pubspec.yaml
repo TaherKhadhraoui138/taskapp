@@ -10,6 +10,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_gemini: 3.0.0
   firebase_core: ^2.24.0
   firebase_auth: ^4.16.2
   cloud_firestore: ^4.13.2
