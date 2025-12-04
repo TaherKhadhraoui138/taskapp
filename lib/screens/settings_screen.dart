@@ -24,8 +24,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
+      isScrollControlled: true,
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.7,
+      ),
       builder: (context) {
-        return Container(
+        return Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -55,59 +59,65 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Choose when to receive notifications before task deadline',
                 style: AppTextStyles.caption.copyWith(color: AppColors.grey),
               ),
-              const SizedBox(height: 24),
-              ...NotificationSettingsProvider.reminderOptions.map((minutes) {
-                final isSelected = settings.reminderMinutes == minutes;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: InkWell(
-                    onTap: () {
-                      settings.setReminderMinutes(minutes);
-                      Navigator.pop(context);
-                    },
-                    borderRadius: BorderRadius.circular(16),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                      decoration: BoxDecoration(
-                        gradient: isSelected ? AppGradients.ocean : null,
-                        color: isSelected ? null : (isDark ? AppColors.backgroundDark : Colors.grey.shade100),
-                        borderRadius: BorderRadius.circular(16),
-                        border: isSelected ? null : Border.all(
-                          color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            isSelected ? Icons.check_circle_rounded : Icons.circle_outlined,
-                            color: isSelected ? Colors.white : AppColors.grey,
-                          ),
-                          const SizedBox(width: 16),
-                          Text(
-                            NotificationSettingsProvider.formatReminderTime(minutes),
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: isSelected
-                                  ? Colors.white
-                                  : (isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
-                            ),
-                          ),
-                          const Spacer(),
-                          Text(
-                            _getReminderDescription(minutes),
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: isSelected ? Colors.white70 : AppColors.grey,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
               const SizedBox(height: 16),
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: NotificationSettingsProvider.reminderOptions.map((minutes) {
+                      final isSelected = settings.reminderMinutes == minutes;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: InkWell(
+                          onTap: () {
+                            settings.setReminderMinutes(minutes);
+                            Navigator.pop(context);
+                          },
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                            decoration: BoxDecoration(
+                              gradient: isSelected ? AppGradients.ocean : null,
+                              color: isSelected ? null : (isDark ? AppColors.backgroundDark : Colors.grey.shade100),
+                              borderRadius: BorderRadius.circular(16),
+                              border: isSelected ? null : Border.all(
+                                color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  isSelected ? Icons.check_circle_rounded : Icons.circle_outlined,
+                                  color: isSelected ? Colors.white : AppColors.grey,
+                                ),
+                                const SizedBox(width: 16),
+                                Text(
+                                  NotificationSettingsProvider.formatReminderTime(minutes),
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: isSelected
+                                        ? Colors.white
+                                        : (isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
+                                  ),
+                                ),
+                                const Spacer(),
+                                Text(
+                                  _getReminderDescription(minutes),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: isSelected ? Colors.white70 : AppColors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
             ],
           ),
         );
