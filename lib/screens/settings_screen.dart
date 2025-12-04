@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
+import '../providers/notification_settings_provider.dart';
 import '../core/app_theme.dart';
 import '../core/animated_widgets.dart';
 import 'about_screen.dart';
@@ -13,6 +14,137 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+
+  void _showReminderTimePicker(BuildContext context, NotificationSettingsProvider settings) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? AppColors.cardDark : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      isScrollControlled: true,
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.7,
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      gradient: AppGradients.ocean,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.timer_rounded, color: Colors.white, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Reminder Time',
+                    style: AppTextStyles.heading3.copyWith(
+                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Choose when to receive notifications before task deadline',
+                style: AppTextStyles.caption.copyWith(color: AppColors.grey),
+              ),
+              const SizedBox(height: 16),
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: NotificationSettingsProvider.reminderOptions.map((minutes) {
+                      final isSelected = settings.reminderMinutes == minutes;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: InkWell(
+                          onTap: () {
+                            settings.setReminderMinutes(minutes);
+                            Navigator.pop(context);
+                          },
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                            decoration: BoxDecoration(
+                              gradient: isSelected ? AppGradients.ocean : null,
+                              color: isSelected ? null : (isDark ? AppColors.backgroundDark : Colors.grey.shade100),
+                              borderRadius: BorderRadius.circular(16),
+                              border: isSelected ? null : Border.all(
+                                color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  isSelected ? Icons.check_circle_rounded : Icons.circle_outlined,
+                                  color: isSelected ? Colors.white : AppColors.grey,
+                                ),
+                                const SizedBox(width: 16),
+                                Text(
+                                  NotificationSettingsProvider.formatReminderTime(minutes),
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: isSelected
+                                        ? Colors.white
+                                        : (isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
+                                  ),
+                                ),
+                                const Spacer(),
+                                Text(
+                                  _getReminderDescription(minutes),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: isSelected ? Colors.white70 : AppColors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _getReminderDescription(int minutes) {
+    switch (minutes) {
+      case 5:
+        return 'Last minute';
+      case 10:
+        return 'Quick reminder';
+      case 15:
+        return 'Short notice';
+      case 30:
+        return 'Recommended';
+      case 60:
+        return 'Plenty of time';
+      case 120:
+        return 'Early reminder';
+      case 1440:
+        return 'Day before';
+      default:
+        return '';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -160,7 +292,146 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ),
                       const SizedBox(height: 28),
-                      
+
+                      // Notifications section
+                      SlideAnimation(
+                        delay: const Duration(milliseconds: 120),
+                        child: _buildSectionHeader('Notifications', Icons.notifications_rounded, AppGradients.sunset),
+                      ),
+                      const SizedBox(height: 16),
+                      SlideAnimation(
+                        delay: const Duration(milliseconds: 140),
+                        child: Consumer<NotificationSettingsProvider>(
+                          builder: (context, notificationSettings, _) {
+                            return _buildSettingCard(
+                              isDark: isDark,
+                              child: Column(
+                                children: [
+                                  // Enable/Disable notifications
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          gradient: notificationSettings.notificationsEnabled
+                                              ? AppGradients.sunset
+                                              : LinearGradient(colors: [AppColors.grey, AppColors.grey]),
+                                          borderRadius: BorderRadius.circular(14),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: (notificationSettings.notificationsEnabled
+                                                      ? AppColors.amber
+                                                      : AppColors.grey)
+                                                  .withOpacity(0.3),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Icon(
+                                          notificationSettings.notificationsEnabled
+                                              ? Icons.notifications_active_rounded
+                                              : Icons.notifications_off_rounded,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text('Enable Notifications', style: AppTextStyles.subtitle.copyWith(
+                                              color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                                            )),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              'Receive reminders for your tasks',
+                                              style: AppTextStyles.caption.copyWith(color: AppColors.grey),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Switch.adaptive(
+                                        value: notificationSettings.notificationsEnabled,
+                                        onChanged: (value) => notificationSettings.setNotificationsEnabled(value),
+                                        activeColor: AppColors.amber,
+                                        activeTrackColor: AppColors.amber.withOpacity(0.3),
+                                      ),
+                                    ],
+                                  ),
+                                  if (notificationSettings.notificationsEnabled) ...[
+                                    const SizedBox(height: 16),
+                                    Divider(height: 1, color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
+                                    const SizedBox(height: 16),
+                                    // Reminder time setting
+                                    InkWell(
+                                      onTap: () => _showReminderTimePicker(context, notificationSettings),
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(12),
+                                            decoration: BoxDecoration(
+                                              gradient: AppGradients.ocean,
+                                              borderRadius: BorderRadius.circular(14),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: AppColors.cyan.withOpacity(0.3),
+                                                  blurRadius: 8,
+                                                  offset: const Offset(0, 2),
+                                                ),
+                                              ],
+                                            ),
+                                            child: const Icon(
+                                              Icons.timer_rounded,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 16),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text('Reminder Time', style: AppTextStyles.subtitle.copyWith(
+                                                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                                                )),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  'Notify me before deadline',
+                                                  style: AppTextStyles.caption.copyWith(color: AppColors.grey),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.cyan.withOpacity(0.1),
+                                              borderRadius: BorderRadius.circular(20),
+                                            ),
+                                            child: Text(
+                                              NotificationSettingsProvider.formatReminderTime(notificationSettings.reminderMinutes),
+                                              style: TextStyle(
+                                                color: AppColors.cyan,
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Icon(Icons.arrow_forward_ios_rounded, size: 16, color: AppColors.grey),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+
                       // About section
                       SlideAnimation(
                         delay: const Duration(milliseconds: 150),

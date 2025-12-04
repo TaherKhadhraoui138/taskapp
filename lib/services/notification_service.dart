@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import '../models/task.dart';
@@ -89,9 +90,27 @@ class NotificationService {
     _checkTimer = null;
   }
 
+  // Get reminder minutes from settings
+  Future<int> _getReminderMinutes() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt('notification_reminder_minutes') ?? 30;
+  }
+
+  // Check if notifications are enabled
+  Future<bool> _areNotificationsEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('notifications_enabled') ?? true;
+  }
+
   // Check all tasks for upcoming deadlines
   Future<void> _checkTaskDeadlines() async {
     if (_currentUserId == null) return;
+
+    // Check if notifications are enabled
+    final notificationsEnabled = await _areNotificationsEnabled();
+    if (!notificationsEnabled) return;
+
+    final reminderMinutes = await _getReminderMinutes();
 
     try {
       final snapshot = await _firestore
@@ -109,8 +128,8 @@ class NotificationService {
         if (task.deadline != null && !task.isCompleted) {
           final timeUntilDeadline = task.deadline!.difference(now);
 
-          // Check if deadline is within 30 minutes and more than 0
-          if (timeUntilDeadline.inMinutes <= 30 && timeUntilDeadline.inMinutes > 0) {
+          // Check if deadline is within reminder time and more than 0
+          if (timeUntilDeadline.inMinutes <= reminderMinutes && timeUntilDeadline.inMinutes > 0) {
             await _sendDeadlineNotification(task, timeUntilDeadline.inMinutes);
           }
 
@@ -400,11 +419,16 @@ class NotificationService {
     }
   }
 
-  // Schedule a notification for a specific time (30 min before deadline)
+  // Schedule a notification for a specific time based on settings
   Future<void> scheduleDeadlineNotification(Task task) async {
     if (task.deadline == null) return;
 
-    final scheduledTime = task.deadline!.subtract(const Duration(minutes: 30));
+    // Check if notifications are enabled
+    final notificationsEnabled = await _areNotificationsEnabled();
+    if (!notificationsEnabled) return;
+
+    final reminderMinutes = await _getReminderMinutes();
+    final scheduledTime = task.deadline!.subtract(Duration(minutes: reminderMinutes));
 
     if (scheduledTime.isBefore(DateTime.now())) return;
 
@@ -429,15 +453,29 @@ class NotificationService {
       iOS: iosDetails,
     );
 
+    final reminderText = _formatReminderTime(reminderMinutes);
+
     await _flutterLocalNotificationsPlugin.zonedSchedule(
       task.id.hashCode + 3000,
       '⏰ Task Reminder',
-      'Task "${task.title}" is due in 30 minutes!',
+      'Task "${task.title}" is due in $reminderText!',
       tzScheduledTime,
       notificationDetails,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       payload: task.id,
     );
+  }
+
+  String _formatReminderTime(int minutes) {
+    if (minutes < 60) {
+      return '$minutes minutes';
+    } else if (minutes == 60) {
+      return '1 hour';
+    } else if (minutes < 1440) {
+      return '${minutes ~/ 60} hours';
+    } else {
+      return '1 day';
+    }
   }
 
   // Cancel scheduled notification for a task

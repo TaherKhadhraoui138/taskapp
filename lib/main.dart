@@ -1,11 +1,13 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'screens/splash_screen.dart';
 import 'providers/theme_provider.dart';
+import 'providers/notification_settings_provider.dart';
 import 'core/app_theme.dart';
 import 'services/notification_service.dart';
 
@@ -73,10 +75,13 @@ void main() async {
 
   // Initialize notification service
   await NotificationService().initialize();
-
+  Gemini.init(apiKey: 'AIzaSyAzbAROUqnZUFELrPPQzIfcmAwoTISqAlY');
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => ThemeProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationSettingsProvider()),
+      ],
       child: const TaskManagerApp(),
     ),
   );

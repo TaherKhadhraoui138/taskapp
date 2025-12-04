@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:taskai/screens/settings_screen.dart';
 import '../models/user.dart';
@@ -5,11 +7,55 @@ import '../services/auth_service.dart';
 import '../core/app_theme.dart';
 import '../core/animated_widgets.dart';
 import 'about_screen.dart';
+import 'edit_profile_screen.dart';
 import 'login_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   final User user;
-  const ProfileScreen({Key? key, required this.user}) : super(key: key);
+  final Function(User)? onUserUpdated;
+  
+  const ProfileScreen({Key? key, required this.user, this.onUserUpdated}) : super(key: key);
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  late User _currentUser;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentUser = widget.user;
+  }
+
+  @override
+  void didUpdateWidget(ProfileScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Update local user when parent widget updates
+    if (oldWidget.user != widget.user) {
+      _currentUser = widget.user;
+    }
+  }
+
+  void _onProfileUpdated(User updatedUser) {
+    setState(() {
+      _currentUser = updatedUser;
+    });
+    // Also notify parent (HomeScreen) about the update
+    widget.onUserUpdated?.call(updatedUser);
+  }
+
+  ImageProvider _getProfileImage(String url) {
+    if (url.startsWith('data:image')) {
+      // Handle base64 data URL
+      final base64String = url.split(',').last;
+      final bytes = base64Decode(base64String);
+      return MemoryImage(Uint8List.fromList(bytes));
+    } else {
+      return NetworkImage(url);
+    }
+  }
 
   void _logout(BuildContext context) async {
     await AuthService().logout();
@@ -92,43 +138,77 @@ class ProfileScreen extends StatelessWidget {
                   
                   // Profile Avatar with glow
                   SlideAnimation(
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        // Glow effect
-                        Container(
-                          width: 140,
-                          height: 140,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: RadialGradient(
-                              colors: [
-                                AppColors.coral.withOpacity(0.4),
-                                Colors.transparent,
-                              ],
+                    child: GestureDetector(
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => EditProfileScreen(
+                            user: _currentUser,
+                            onProfileUpdated: _onProfileUpdated,
+                          ),
+                        ),
+                      ),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Glow effect
+                          Container(
+                            width: 140,
+                            height: 140,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(
+                                colors: [
+                                  AppColors.coral.withOpacity(0.4),
+                                  Colors.transparent,
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                        // Avatar border
-                        Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: AppGradients.primary,
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.coral.withOpacity(0.4),
-                                blurRadius: 20,
-                                offset: const Offset(0, 8),
+                          // Avatar border
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: AppGradients.primary,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.coral.withOpacity(0.4),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            child: CircleAvatar(
+                              radius: 60,
+                              backgroundImage: _getProfileImage(_currentUser.profilePictureUrl),
+                            ),
+                          ),
+                          // Edit icon overlay
+                          Positioned(
+                            bottom: 5,
+                            right: 5,
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                gradient: AppGradients.primary,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.coral.withOpacity(0.4),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
                               ),
-                            ],
+                              child: const Icon(
+                                Icons.edit_rounded,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                            ),
                           ),
-                          child: CircleAvatar(
-                            radius: 60,
-                            backgroundImage: NetworkImage(user.profilePictureUrl),
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -139,7 +219,7 @@ class ProfileScreen extends StatelessWidget {
                     child: ShaderMask(
                       shaderCallback: (bounds) => AppGradients.primary.createShader(bounds),
                       child: Text(
-                        user.name,
+                        _currentUser.name,
                         style: AppTextStyles.heading1.copyWith(color: Colors.white),
                       ),
                     ),
@@ -161,7 +241,7 @@ class ProfileScreen extends StatelessWidget {
                           Icon(Icons.email_outlined, size: 16, color: AppColors.grey),
                           const SizedBox(width: 8),
                           Text(
-                            user.email,
+                            _currentUser.email,
                             style: AppTextStyles.body.copyWith(color: AppColors.grey),
                           ),
                         ],
@@ -181,6 +261,22 @@ class ProfileScreen extends StatelessWidget {
                       ),
                       child: Column(
                         children: [
+                          _buildMenuItem(
+                            context,
+                            icon: Icons.edit_rounded,
+                            title: 'Edit Profile',
+                            gradient: AppGradients.aurora,
+                            isDark: isDark,
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => EditProfileScreen(
+                                  user: _currentUser,
+                                  onProfileUpdated: _onProfileUpdated,
+                                ),
+                              ),
+                            ),
+                          ),
+                          Divider(height: 1, color: isDark ? Colors.grey.shade800 : Colors.grey.shade100, indent: 72, endIndent: 20),
                           _buildMenuItem(
                             context,
                             icon: Icons.settings_rounded,

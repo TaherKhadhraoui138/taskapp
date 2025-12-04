@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:math' as math;
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../models/task.dart';
 import '../models/user.dart';
@@ -42,10 +44,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   TaskPriority? _selectedPriority;
   late AnimationController _fabAnimationController;
   late Animation<double> _fabAnimation;
+  late User _currentUser;
+
+  ImageProvider _getProfileImage(String url) {
+    if (url.startsWith('data:image')) {
+      final base64String = url.split(',').last;
+      final bytes = base64Decode(base64String);
+      return MemoryImage(Uint8List.fromList(bytes));
+    } else {
+      return NetworkImage(url);
+    }
+  }
 
   @override
   void initState() {
     super.initState();
+    _currentUser = widget.user;
     _loadTasks();
     _loadUnreadNotificationsCount();
     _pageController = PageController(initialPage: _selectedIndex);
@@ -472,7 +486,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 ),
                                 child: CircleAvatar(
                                   radius: 18,
-                                  backgroundImage: NetworkImage(widget.user.profilePictureUrl),
+                                  backgroundImage: _getProfileImage(_currentUser.profilePictureUrl),
                                   backgroundColor: Colors.white.withOpacity(0.2),
                                 ),
                               ),
@@ -499,28 +513,31 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             width: 60,
                             height: 60,
                             child: Stack(
+                              alignment: Alignment.center,
                               children: [
-                                TweenAnimationBuilder<double>(
-                                  tween: Tween(begin: 0, end: progress),
-                                  duration: const Duration(milliseconds: 1000),
-                                  curve: Curves.easeOutCubic,
-                                  builder: (context, value, child) {
-                                    return CircularProgressIndicator(
-                                      value: value,
-                                      strokeWidth: 6,
-                                      backgroundColor: Colors.white.withOpacity(0.2),
-                                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                                    );
-                                  },
+                                SizedBox(
+                                  width: 60,
+                                  height: 60,
+                                  child: TweenAnimationBuilder<double>(
+                                    tween: Tween(begin: 0, end: progress),
+                                    duration: const Duration(milliseconds: 1000),
+                                    curve: Curves.easeOutCubic,
+                                    builder: (context, value, child) {
+                                      return CircularProgressIndicator(
+                                        value: value,
+                                        strokeWidth: 6,
+                                        backgroundColor: Colors.white.withOpacity(0.2),
+                                        valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                                      );
+                                    },
+                                  ),
                                 ),
-                                Center(
-                                  child: Text(
-                                    '${(progress * 100).toInt()}%',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
+                                Text(
+                                  '${(progress * 100).toInt()}%',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
                                   ),
                                 ),
                               ],
@@ -834,7 +851,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           _buildTaskScreen(),
           const StatsScreen(),
           const CalendarScreen(),
-          ProfileScreen(user: widget.user),
+          ProfileScreen(
+            user: _currentUser,
+            onUserUpdated: (updatedUser) {
+              setState(() {
+                _currentUser = updatedUser;
+              });
+            },
+          ),
         ],
       ),
       floatingActionButton: _selectedIndex == 0
