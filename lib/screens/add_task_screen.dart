@@ -7,6 +7,7 @@ import '../widgets/custom_button.dart';
 import '../core/app_theme.dart';
 import '../core/animated_widgets.dart';
 import '../main.dart';
+import 'package:flutter_gemini/flutter_gemini.dart';
 
 class AddTaskScreen extends StatefulWidget {
   final Task? task;
@@ -34,6 +35,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
   late int? _recurrenceInterval;
   late DateTime? _recurrenceEndDate;
   late TabController _tabController;
+  bool _isGeneratingSubtasks = false;
 
   @override
   void initState() {
@@ -213,6 +215,51 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
     }
   }
 
+  Future<void> _generateSubtasks() async {
+    if (_title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a title for the task first.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isGeneratingSubtasks = true;
+    });
+
+    try {
+      final existingSubtasks = _subtasks.map((s) => s.title).join(', ');
+      final prompt =
+          'You are a sub-task suggestion assistant. Given a main task title, its detailed description, and a list of existing sub-tasks, suggest the next single, logical sub-task. Do not repeat any of the existing sub-tasks. Main task title: "$_title", Main task description: "$_description", Existing sub-tasks: [$existingSubtasks]. Return only the text of the new sub-task suggestion, without any introductory text.';
+
+      final response = await Gemini.instance.text(prompt);
+
+      if (response != null && response.output != null) {
+        // Clean the output to remove potential markdown like '*' or quotes
+        final suggestion = response.output!.trim().replaceAll(RegExp(r'^"|"| ^\*|\*$'), '').trim();
+        if (suggestion.isNotEmpty) {
+          setState(() {
+            _subtasks.add(Subtask(title: suggestion));
+          });
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to generate sub-tasks: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() {
+        _isGeneratingSubtasks = false;
+      });
+    }
+  }
+
   Widget _buildBasicInfoTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20.0),
@@ -261,11 +308,12 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
                   return null;
                 },
                 onSaved: (value) => _title = value!,
+                onChanged: (value) => _title = value,
               ),
             ),
           ),
           const SizedBox(height: 20),
-          
+
           // Description Field
           SlideAnimation(
             delay: const Duration(milliseconds: 200),
@@ -303,11 +351,12 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
                   ),
                 ),
                 onSaved: (value) => _description = value ?? '',
+                onChanged: (value) => _description = value,
               ),
             ),
           ),
           const SizedBox(height: 24),
-          
+
           // Deadline Toggle
           SlideAnimation(
             delay: const Duration(milliseconds: 300),
@@ -353,7 +402,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
               ),
             ),
           ),
-          
+
           if (_hasDeadline) ...[
             const SizedBox(height: 16),
             SlideAnimation(
@@ -426,7 +475,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
             ],
           ],
           const SizedBox(height: 24),
-          
+
           // Category Section
           SlideAnimation(
             delay: const Duration(milliseconds: 500),
@@ -438,7 +487,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
             child: _buildCategoryChips(),
           ),
           const SizedBox(height: 24),
-          
+
           // Priority Section
           SlideAnimation(
             delay: const Duration(milliseconds: 600),
@@ -546,63 +595,100 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
       children: [
         Padding(
           padding: const EdgeInsets.all(20.0),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              gradient: LinearGradient(
-                colors: [
-                  Colors.white,
-                  AppColors.cyan.withOpacity(0.1),
-                ],
-              ),
-              boxShadow: AppShadows.medium,
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _subtaskController,
-                    style: AppTextStyles.body,
-                    decoration: InputDecoration(
-                      labelText: 'Add subtask',
-                      labelStyle: TextStyle(color: AppColors.cyan),
-                      prefixIcon: ShaderMask(
-                        shaderCallback: (bounds) => AppGradients.secondary.createShader(bounds),
-                        child: const Icon(Icons.add_task_rounded, color: Colors.white),
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        borderSide: BorderSide.none,
-                      ),
-                      filled: true,
-                      fillColor: Colors.transparent,
-                    ),
-                    onSubmitted: (_) => _addSubtask(),
+          child: Column(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.white,
+                      AppColors.cyan.withOpacity(0.1),
+                    ],
                   ),
+                  boxShadow: AppShadows.medium,
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: GestureDetector(
-                    onTap: _addSubtask,
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        gradient: AppGradients.secondary,
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.cyan.withOpacity(0.4),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _subtaskController,
+                        style: AppTextStyles.body,
+                        decoration: InputDecoration(
+                          labelText: 'Add subtask',
+                          labelStyle: TextStyle(color: AppColors.cyan),
+                          prefixIcon: ShaderMask(
+                            shaderCallback: (bounds) => AppGradients.secondary.createShader(bounds),
+                            child: const Icon(Icons.add_task_rounded, color: Colors.white),
                           ),
-                        ],
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
+                          fillColor: Colors.transparent,
+                        ),
+                        onSubmitted: (_) => _addSubtask(),
                       ),
-                      child: const Icon(Icons.add_rounded, color: Colors.white, size: 24),
                     ),
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: GestureDetector(
+                        onTap: _addSubtask,
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            gradient: AppGradients.secondary,
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.cyan.withOpacity(0.4),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(Icons.add_rounded, color: Colors.white, size: 24),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              GestureDetector(
+                onTap: _generateSubtasks,
+                child: Container(
+                  height: 50,
+                  decoration: BoxDecoration(
+                    gradient: AppGradients.primary,
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.coral.withOpacity(0.4),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: _isGeneratingSubtasks
+                        ? const CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white))
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.auto_awesome, color: Colors.white),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Suggest Sub-tasks',
+                                style: AppTextStyles.button.copyWith(color: Colors.white),
+                              ),
+                            ],
+                          ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
         Expanded(
@@ -897,14 +983,14 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
       TaskPriority.medium: [const Color(0xFFFF9800), const Color(0xFFFFB74D)],
       TaskPriority.high: [const Color(0xFFF44336), const Color(0xFFE57373)],
     };
-    
+
     return Wrap(
       spacing: 10.0,
       runSpacing: 10.0,
       children: TaskPriority.values.map((priority) {
         final isSelected = _priority == priority;
         final colors = priorityGradients[priority]!;
-        
+
         return GestureDetector(
           onTap: () {
             setState(() {
@@ -1005,7 +1091,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
               ),
             ),
           ),
-          
+
           // Main content
           SafeArea(
             child: Column(
@@ -1040,7 +1126,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
                     ],
                   ),
                 ),
-                
+
                 // Tab Bar
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -1095,7 +1181,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
                   ),
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Tab Content
                 Expanded(
                   child: Form(
