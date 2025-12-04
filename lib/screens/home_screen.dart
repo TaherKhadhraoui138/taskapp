@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../models/task.dart';
 import '../models/user.dart';
@@ -7,6 +8,8 @@ import '../services/notification_service.dart';
 import '../widgets/task_list_item.dart';
 import '../widgets/custom_bottom_nav_bar.dart';
 import '../widgets/empty_state_widget.dart';
+import '../core/app_theme.dart';
+import '../core/animated_widgets.dart';
 import 'add_task_screen.dart';
 import 'login_screen.dart';
 import 'stats_screen.dart';
@@ -321,182 +324,428 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildTaskScreen() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Header
-        Container(
-          padding: const EdgeInsets.fromLTRB(20, 50, 20, 10),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Hello, ${widget.user.name.split(' ').first}',
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: textColor),
-                  ),
-                  const SizedBox(height: 5),
-                  const Text(
-                    "Today's tasks",
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
-                  ),
-                ],
-              ),
-              CircleAvatar(
-                backgroundImage: NetworkImage(widget.user.profilePictureUrl),
-                radius: 20,
-              ),
-            ],
-          ),
-        ),
-
-        // Search Bar
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Search tasks...',
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        _searchController.clear();
-                      },
-                    )
-                        : null,
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Container(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final completedCount = _allTasks.where((t) => t.isCompleted).length;
+    final totalTasks = _allTasks.length;
+    final progress = totalTasks > 0 ? completedCount / totalTasks : 0.0;
+    
+    return Container(
+      decoration: BoxDecoration(
+        gradient: isDark ? AppGradients.backgroundDark : AppGradients.backgroundLight,
+      ),
+      child: RefreshIndicator(
+        onRefresh: _loadTasks,
+        color: AppColors.primaryStart,
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+          slivers: [
+            // Animated Header with gradient
+            SliverToBoxAdapter(
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
                 decoration: BoxDecoration(
-                  color: (_selectedCategory != null || _selectedPriority != null)
-                      ? primaryColor
-                      : Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: IconButton(
-                  icon: Icon(
-                    Icons.filter_list,
-                    color: (_selectedCategory != null || _selectedPriority != null)
-                        ? Colors.white
-                        : textColor,
+                  gradient: AppGradients.primary,
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(32),
+                    bottomRight: Radius.circular(32),
                   ),
-                  onPressed: _showFilterBottomSheet,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primaryStart.withOpacity(0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Hello, ${widget.user.name.split(' ').first} 👋',
+                              style: const TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _getGreeting(),
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.white.withOpacity(0.85),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        GestureDetector(
+                          onTap: () => _onItemTapped(4),
+                          child: Container(
+                            padding: const EdgeInsets.all(3),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2),
+                            ),
+                            child: CircleAvatar(
+                              radius: 24,
+                              backgroundImage: NetworkImage(widget.user.profilePictureUrl),
+                              backgroundColor: Colors.white.withOpacity(0.2),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    // Progress Card
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.2),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          // Circular progress
+                          SizedBox(
+                            width: 60,
+                            height: 60,
+                            child: Stack(
+                              children: [
+                                TweenAnimationBuilder<double>(
+                                  tween: Tween(begin: 0, end: progress),
+                                  duration: const Duration(milliseconds: 1000),
+                                  curve: Curves.easeOutCubic,
+                                  builder: (context, value, child) {
+                                    return CircularProgressIndicator(
+                                      value: value,
+                                      strokeWidth: 6,
+                                      backgroundColor: Colors.white.withOpacity(0.2),
+                                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                                    );
+                                  },
+                                ),
+                                Center(
+                                  child: Text(
+                                    '${(progress * 100).toInt()}%',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 20),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Daily Progress',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '$completedCount of $totalTasks tasks completed',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.8),
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              '$totalTasks Tasks',
+                              style: TextStyle(
+                                color: AppColors.primaryStart,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
+            ),
 
-        // Filter Chips
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: ['All', 'Today', 'Completed'].map((filter) {
-                final isSelected = _currentFilter == filter;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: FilterChip(
-                    label: Text(filter),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      if (selected) {
-                        _filterTasks(filter);
-                      }
-                    },
-                    backgroundColor: Colors.white,
-                    selectedColor: primaryColor.withOpacity(0.1),
-                    labelStyle: TextStyle(
-                      color: isSelected ? primaryColor : textColor,
-                      fontWeight: FontWeight.bold,
+            const SliverToBoxAdapter(child: SizedBox(height: 20)),
+            
+            // Search Bar with glass effect
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: isDark ? AppColors.cardDark : Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: AppShadows.small,
+                        ),
+                        child: TextField(
+                          controller: _searchController,
+                          style: TextStyle(
+                            color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Search tasks...',
+                            hintStyle: TextStyle(
+                              color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                            ),
+                            prefixIcon: Icon(
+                              Icons.search_rounded,
+                              color: AppColors.primaryStart,
+                            ),
+                            suffixIcon: _searchQuery.isNotEmpty
+                                ? IconButton(
+                                    icon: Icon(
+                                      Icons.close_rounded,
+                                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                                    ),
+                                    onPressed: () => _searchController.clear(),
+                                  )
+                                : null,
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                          ),
+                        ),
+                      ),
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                      side: BorderSide(
-                        color: isSelected ? primaryColor : Colors.grey.shade300,
-                        width: 1,
+                    const SizedBox(width: 12),
+                    AnimatedScaleTap(
+                      onTap: _showFilterBottomSheet,
+                      child: Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          gradient: (_selectedCategory != null || _selectedPriority != null)
+                              ? AppGradients.primary
+                              : null,
+                          color: (_selectedCategory != null || _selectedPriority != null)
+                              ? null
+                              : (isDark ? AppColors.cardDark : Colors.white),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: AppShadows.small,
+                        ),
+                        child: Icon(
+                          Icons.tune_rounded,
+                          color: (_selectedCategory != null || _selectedPriority != null)
+                              ? Colors.white
+                              : AppColors.primaryStart,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            const SliverToBoxAdapter(child: SizedBox(height: 20)),
+
+            // Filter Chips with animation
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  child: Row(
+                    children: ['All', 'Today', 'Completed'].asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final filter = entry.value;
+                      final isSelected = _currentFilter == filter;
+                      final icons = [Icons.list_alt_rounded, Icons.today_rounded, Icons.check_circle_rounded];
+                      
+                      return Padding(
+                        padding: EdgeInsets.only(right: index < 2 ? 12 : 0),
+                        child: AnimatedScaleTap(
+                          onTap: () => _filterTasks(filter),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            decoration: BoxDecoration(
+                              gradient: isSelected ? AppGradients.primary : null,
+                              color: isSelected ? null : (isDark ? AppColors.cardDark : Colors.white),
+                              borderRadius: BorderRadius.circular(30),
+                              boxShadow: isSelected
+                                  ? [
+                                      BoxShadow(
+                                        color: AppColors.primaryStart.withOpacity(0.3),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ]
+                                  : AppShadows.small,
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  icons[index],
+                                  size: 18,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  filter,
+                                  style: TextStyle(
+                                    color: isSelected
+                                        ? Colors.white
+                                        : (isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+            ),
+            
+            const SliverToBoxAdapter(child: SizedBox(height: 16)),
+
+            // Section Title
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _currentFilter == 'All'
+                          ? 'All Tasks'
+                          : _currentFilter == 'Today'
+                              ? "Today's Tasks"
+                              : 'Completed',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryStart.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${_filteredTasks.length} tasks',
+                        style: TextStyle(
+                          color: AppColors.primaryStart,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            const SliverToBoxAdapter(child: SizedBox(height: 12)),
+
+            // Task List
+            _filteredTasks.isEmpty
+                ? SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: EmptyStateWidget(
+                      message: _searchQuery.isNotEmpty
+                          ? 'No tasks match your search'
+                          : _currentFilter == 'Today'
+                              ? 'No tasks for today'
+                              : _currentFilter == 'Completed'
+                                  ? 'No completed tasks yet'
+                                  : 'No tasks yet',
+                      actionText: _searchQuery.isEmpty && _currentFilter == 'All' 
+                          ? 'Add your first task' 
+                          : null,
+                      onAction: _searchQuery.isEmpty && _currentFilter == 'All'
+                          ? () => _navigateToAddEditTask()
+                          : null,
+                    ),
+                  )
+                : SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final task = _filteredTasks[index];
+                          return StaggeredListItem(
+                            index: index,
+                            child: TaskListItem(
+                              key: ValueKey(task.id),
+                              task: task,
+                              onTap: () => _navigateToAddEditTask(task: task),
+                              onToggle: () => _toggleTaskCompletion(task),
+                              onDelete: () => _deleteTask(task),
+                            ),
+                          );
+                        },
+                        childCount: _filteredTasks.length,
                       ),
                     ),
                   ),
-                );
-              }).toList(),
-            ),
-          ),
+            
+            // Bottom padding for FAB
+            const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          ],
         ),
-
-        // Task List
-        Expanded(
-          child: RefreshIndicator(
-            onRefresh: _loadTasks,
-            child: _filteredTasks.isEmpty
-                ? EmptyStateWidget(
-              message: _searchQuery.isNotEmpty
-                  ? 'No tasks match your search'
-                  : _currentFilter == 'Today'
-                  ? 'No tasks for today'
-                  : _currentFilter == 'Completed'
-                  ? 'No completed tasks yet'
-                  : 'No tasks yet',
-              actionText: _searchQuery.isEmpty && _currentFilter == 'All' ? 'Add your first task' : null,
-              onAction: _searchQuery.isEmpty && _currentFilter == 'All'
-                  ? () => _navigateToAddEditTask()
-                  : null,
-            )
-                : ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              itemCount: _filteredTasks.length,
-              itemBuilder: (context, index) {
-                final task = _filteredTasks[index];
-                return TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0.0, end: 1.0),
-                  duration: Duration(milliseconds: 300 + (index * 50)),
-                  curve: Curves.easeOut,
-                  builder: (context, value, child) {
-                    return Transform.translate(
-                      offset: Offset(0, 20 * (1 - value)),
-                      child: Opacity(
-                        opacity: value,
-                        child: child,
-                      ),
-                    );
-                  },
-                  child: TaskListItem(
-                    key: ValueKey(task.id),
-                    task: task,
-                    onTap: () => _navigateToAddEditTask(task: task),
-                    onToggle: () => _toggleTaskCompletion(task),
-                    onDelete: () => _deleteTask(task),
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-      ],
+      ),
     );
+  }
+  
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) {
+      return 'Good morning! Ready to be productive?';
+    } else if (hour < 17) {
+      return 'Good afternoon! Keep up the great work!';
+    } else {
+      return 'Good evening! Finishing strong today?';
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       body: PageView(
         controller: _pageController,
+        physics: const NeverScrollableScrollPhysics(),
         onPageChanged: (index) {
           setState(() {
             _selectedIndex = index;
@@ -512,13 +761,28 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ),
       floatingActionButton: _selectedIndex == 0
           ? ScaleTransition(
-        scale: _fabAnimation,
-        child: FloatingActionButton(
-          onPressed: () => _navigateToAddEditTask(),
-          backgroundColor: Theme.of(context).primaryColor,
-          child: const Icon(Icons.add, color: Colors.white),
-        ),
-      )
+              scale: _fabAnimation,
+              child: AnimatedScaleTap(
+                onTap: () => _navigateToAddEditTask(),
+                scaleValue: 0.9,
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    gradient: AppGradients.primary,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primaryStart.withOpacity(0.4),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
+                ),
+              ),
+            )
           : null,
       bottomNavigationBar: CustomBottomNavBar(
         selectedIndex: _selectedIndex,

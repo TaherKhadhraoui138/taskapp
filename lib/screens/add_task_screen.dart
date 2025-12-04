@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import '../models/task.dart';
 import '../services/task_service.dart';
 import '../widgets/custom_button.dart';
+import '../core/app_theme.dart';
+import '../core/animated_widgets.dart';
 import '../main.dart';
 
 class AddTaskScreen extends StatefulWidget {
@@ -174,14 +176,27 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.check_circle, color: Colors.white),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                ),
                 const SizedBox(width: 12),
-                Text('Task "$_title" saved successfully!'),
+                Expanded(
+                  child: Text(
+                    'Task "$_title" saved successfully!',
+                    style: AppTextStyles.body.copyWith(color: Colors.white),
+                  ),
+                ),
               ],
             ),
-            backgroundColor: secondaryColor,
+            backgroundColor: AppColors.cyan,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            margin: const EdgeInsets.all(16),
           ),
         );
         Navigator.of(context).pop(true);
@@ -195,140 +210,324 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          TextFormField(
-            initialValue: _title,
-            decoration: const InputDecoration(
-              labelText: 'Title *',
-              prefixIcon: Icon(Icons.title),
-            ),
-            validator: (value) {
-              if (value == null || value.length < 3) {
-                return 'Title must be at least 3 characters.';
-              }
-              return null;
-            },
-            onSaved: (value) => _title = value!,
-          ),
-          const SizedBox(height: 20),
-          TextFormField(
-            initialValue: _description,
-            maxLines: 3,
-            decoration: const InputDecoration(
-              labelText: 'Description',
-              prefixIcon: Icon(Icons.description),
-            ),
-            onSaved: (value) => _description = value ?? '',
-          ),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Deadline', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-              Switch(
-                value: _hasDeadline,
-                onChanged: (value) {
-                  setState(() {
-                    _hasDeadline = value;
-                    if (value && _deadline == null) {
-                      _deadline = _roundToNextQuarterHour(DateTime.now().add(const Duration(hours: 1)));
-                    }
-                  });
+          // Title Field with animation
+          SlideAnimation(
+            delay: const Duration(milliseconds: 100),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.white,
+                    AppColors.coral.withOpacity(0.05),
+                  ],
+                ),
+                boxShadow: AppShadows.small,
+              ),
+              child: TextFormField(
+                initialValue: _title,
+                style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w500),
+                decoration: InputDecoration(
+                  labelText: 'Task Title *',
+                  labelStyle: TextStyle(color: AppColors.coral),
+                  prefixIcon: ShaderMask(
+                    shaderCallback: (bounds) => AppGradients.primary.createShader(bounds),
+                    child: const Icon(Icons.title_rounded, color: Colors.white),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  filled: true,
+                  fillColor: Colors.transparent,
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: AppColors.coral, width: 2),
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.length < 3) {
+                    return 'Title must be at least 3 characters.';
+                  }
+                  return null;
                 },
-                activeColor: Theme.of(context).primaryColor,
+                onSaved: (value) => _title = value!,
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          
+          // Description Field
+          SlideAnimation(
+            delay: const Duration(milliseconds: 200),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.white,
+                    AppColors.cyan.withOpacity(0.05),
+                  ],
+                ),
+                boxShadow: AppShadows.small,
+              ),
+              child: TextFormField(
+                initialValue: _description,
+                maxLines: 3,
+                style: AppTextStyles.body,
+                decoration: InputDecoration(
+                  labelText: 'Description',
+                  labelStyle: TextStyle(color: AppColors.cyan),
+                  prefixIcon: ShaderMask(
+                    shaderCallback: (bounds) => AppGradients.secondary.createShader(bounds),
+                    child: const Icon(Icons.description_rounded, color: Colors.white),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  filled: true,
+                  fillColor: Colors.transparent,
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: AppColors.cyan, width: 2),
+                  ),
+                ),
+                onSaved: (value) => _description = value ?? '',
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          
+          // Deadline Toggle
+          SlideAnimation(
+            delay: const Duration(milliseconds: 300),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.white,
+                    AppColors.purple.withOpacity(0.05),
+                  ],
+                ),
+                boxShadow: AppShadows.small,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      ShaderMask(
+                        shaderCallback: (bounds) => AppGradients.accent.createShader(bounds),
+                        child: const Icon(Icons.schedule_rounded, color: Colors.white),
+                      ),
+                      const SizedBox(width: 12),
+                      Text('Set Deadline', style: AppTextStyles.subtitle),
+                    ],
+                  ),
+                  Switch.adaptive(
+                    value: _hasDeadline,
+                    onChanged: (value) {
+                      setState(() {
+                        _hasDeadline = value;
+                        if (value && _deadline == null) {
+                          _deadline = _roundToNextQuarterHour(DateTime.now().add(const Duration(hours: 1)));
+                        }
+                      });
+                    },
+                    activeColor: AppColors.purple,
+                    activeTrackColor: AppColors.purple.withOpacity(0.3),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          if (_hasDeadline) ...[
+            const SizedBox(height: 16),
+            SlideAnimation(
+              delay: const Duration(milliseconds: 350),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _buildDateTimeSelector(
+                      context,
+                      DateFormat('d MMMM yyyy').format(_deadline!),
+                      () => _selectDate(context),
+                      Icons.calendar_today_rounded,
+                      AppGradients.sunset,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildDateTimeSelector(
+                      context,
+                      DateFormat('HH:mm').format(_deadline!),
+                      () => _selectTime(context),
+                      Icons.access_time_rounded,
+                      AppGradients.ocean,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            SlideAnimation(
+              delay: const Duration(milliseconds: 400),
+              child: _buildSectionHeader('Recurrence', Icons.repeat_rounded, AppGradients.aurora),
+            ),
+            const SizedBox(height: 12),
+            SlideAnimation(
+              delay: const Duration(milliseconds: 450),
+              child: _buildRecurrenceSelector(),
+            ),
+            if (_recurrenceType == RecurrenceType.custom) ...[
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  color: Colors.white,
+                  boxShadow: AppShadows.small,
+                ),
+                child: TextFormField(
+                  initialValue: _recurrenceInterval?.toString() ?? '',
+                  decoration: InputDecoration(
+                    labelText: 'Repeat every (days)',
+                    labelStyle: TextStyle(color: AppColors.purple),
+                    prefixIcon: Icon(Icons.repeat_rounded, color: AppColors.purple),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
+                    ),
+                    filled: true,
+                    fillColor: Colors.transparent,
+                  ),
+                  keyboardType: TextInputType.number,
+                  onChanged: (value) {
+                    _recurrenceInterval = int.tryParse(value);
+                  },
+                ),
+              ),
+            ],
+            if (_recurrenceType != RecurrenceType.none) ...[
+              const SizedBox(height: 12),
+              _buildRecurrenceEndDate(),
+            ],
+          ],
+          const SizedBox(height: 24),
+          
+          // Category Section
+          SlideAnimation(
+            delay: const Duration(milliseconds: 500),
+            child: _buildSectionHeader('Category', Icons.category_rounded, AppGradients.primary),
+          ),
+          const SizedBox(height: 12),
+          SlideAnimation(
+            delay: const Duration(milliseconds: 550),
+            child: _buildCategoryChips(),
+          ),
+          const SizedBox(height: 24),
+          
+          // Priority Section
+          SlideAnimation(
+            delay: const Duration(milliseconds: 600),
+            child: _buildSectionHeader('Priority', Icons.flag_rounded, AppGradients.sunset),
+          ),
+          const SizedBox(height: 12),
+          SlideAnimation(
+            delay: const Duration(milliseconds: 650),
+            child: _buildPriorityChips(),
+          ),
+          const SizedBox(height: 40),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, IconData icon, Gradient gradient) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            gradient: gradient,
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: [
+              BoxShadow(
+                color: (gradient as LinearGradient).colors.first.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
-          if (_hasDeadline) ...[
-            const SizedBox(height: 10),
+          child: Icon(icon, color: Colors.white, size: 18),
+        ),
+        const SizedBox(width: 12),
+        Text(title, style: AppTextStyles.subtitle.copyWith(fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
+
+  Widget _buildRecurrenceEndDate() {
+    return InkWell(
+      onTap: () => _selectRecurrenceEndDate(context),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Colors.white,
+              AppColors.amber.withOpacity(0.1),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: AppShadows.small,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
             Row(
               children: [
-                Expanded(
-                  child: _buildDateTimeSelector(
-                    context,
-                    DateFormat('d MMMM yyyy').format(_deadline!),
-                        () => _selectDate(context),
-                    Icons.calendar_today,
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    gradient: AppGradients.sunset,
+                    borderRadius: BorderRadius.circular(10),
                   ),
+                  child: const Icon(Icons.event_busy_rounded, color: Colors.white, size: 18),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _buildDateTimeSelector(
-                    context,
-                    DateFormat('HH:mm').format(_deadline!),
-                        () => _selectTime(context),
-                    Icons.access_time,
+                const SizedBox(width: 12),
+                Text(
+                  _recurrenceEndDate != null
+                      ? 'Ends: ${DateFormat('d MMM yyyy').format(_recurrenceEndDate!)}'
+                      : 'Set end date (optional)',
+                  style: AppTextStyles.body.copyWith(
+                    color: _recurrenceEndDate != null ? AppColors.charcoal : AppColors.grey,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
-            const Text('Recurrence', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-            const SizedBox(height: 10),
-            _buildRecurrenceSelector(),
-            if (_recurrenceType == RecurrenceType.custom) ...[
-              const SizedBox(height: 10),
-              TextFormField(
-                initialValue: _recurrenceInterval?.toString() ?? '',
-                decoration: const InputDecoration(
-                  labelText: 'Repeat every (days)',
-                  prefixIcon: Icon(Icons.repeat),
-                ),
-                keyboardType: TextInputType.number,
-                onChanged: (value) {
-                  _recurrenceInterval = int.tryParse(value);
+            if (_recurrenceEndDate != null)
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _recurrenceEndDate = null;
+                  });
                 },
-              ),
-            ],
-            if (_recurrenceType != RecurrenceType.none) ...[
-              const SizedBox(height: 10),
-              InkWell(
-                onTap: () => _selectRecurrenceEndDate(context),
                 child: Container(
-                  padding: const EdgeInsets.all(15),
+                  padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade300),
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.event_busy, color: primaryColor),
-                          const SizedBox(width: 10),
-                          Text(
-                            _recurrenceEndDate != null
-                                ? 'Ends: ${DateFormat('d MMM yyyy').format(_recurrenceEndDate!)}'
-                                : 'Set end date (optional)',
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                        ],
-                      ),
-                      if (_recurrenceEndDate != null)
-                        IconButton(
-                          icon: const Icon(Icons.clear, size: 18),
-                          onPressed: () {
-                            setState(() {
-                              _recurrenceEndDate = null;
-                            });
-                          },
-                        ),
-                    ],
-                  ),
+                  child: const Icon(Icons.close_rounded, size: 16, color: Colors.red),
                 ),
               ),
-            ],
           ],
-          const SizedBox(height: 20),
-          const Text('Category', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 10),
-          _buildCategoryChips(),
-          const SizedBox(height: 20),
-          const Text('Priority', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 10),
-          _buildPriorityChips(),
-        ],
+        ),
       ),
     );
   }
@@ -338,133 +537,236 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
       children: [
         Padding(
           padding: const EdgeInsets.all(20.0),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _subtaskController,
-                  decoration: const InputDecoration(
-                    labelText: 'Add subtask',
-                    prefixIcon: Icon(Icons.add_task),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                colors: [
+                  Colors.white,
+                  AppColors.cyan.withOpacity(0.1),
+                ],
+              ),
+              boxShadow: AppShadows.medium,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _subtaskController,
+                    style: AppTextStyles.body,
+                    decoration: InputDecoration(
+                      labelText: 'Add subtask',
+                      labelStyle: TextStyle(color: AppColors.cyan),
+                      prefixIcon: ShaderMask(
+                        shaderCallback: (bounds) => AppGradients.secondary.createShader(bounds),
+                        child: const Icon(Icons.add_task_rounded, color: Colors.white),
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide.none,
+                      ),
+                      filled: true,
+                      fillColor: Colors.transparent,
+                    ),
+                    onSubmitted: (_) => _addSubtask(),
                   ),
-                  onSubmitted: (_) => _addSubtask(),
                 ),
-              ),
-              const SizedBox(width: 10),
-              IconButton(
-                icon: const Icon(Icons.add_circle),
-                color: primaryColor,
-                iconSize: 32,
-                onPressed: _addSubtask,
-              ),
-            ],
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: GestureDetector(
+                    onTap: _addSubtask,
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        gradient: AppGradients.secondary,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.cyan.withOpacity(0.4),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(Icons.add_rounded, color: Colors.white, size: 24),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         Expanded(
           child: _subtasks.isEmpty
               ? Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.checklist, size: 64, color: Colors.grey.shade300),
-                const SizedBox(height: 16),
-                Text(
-                  'No subtasks yet',
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Break down your task into smaller steps',
-                  style: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-                ),
-              ],
-            ),
-          )
-              : ReorderableListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            itemCount: _subtasks.length,
-            onReorder: (oldIndex, newIndex) {
-              setState(() {
-                if (newIndex > oldIndex) newIndex--;
-                final item = _subtasks.removeAt(oldIndex);
-                _subtasks.insert(newIndex, item);
-              });
-            },
-            itemBuilder: (context, index) {
-              final subtask = _subtasks[index];
-              return Container(
-                key: ValueKey(subtask.id),
-                margin: const EdgeInsets.only(bottom: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 5,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: ListTile(
-                  leading: GestureDetector(
-                    onTap: () => _toggleSubtask(index),
-                    child: Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: subtask.isCompleted ? secondaryColor : Colors.transparent,
-                        border: Border.all(color: secondaryColor, width: 2),
-                      ),
-                      child: subtask.isCompleted
-                          ? const Icon(Icons.check, size: 14, color: Colors.white)
-                          : null,
-                    ),
-                  ),
-                  title: Text(
-                    subtask.title,
-                    style: TextStyle(
-                      decoration: subtask.isCompleted ? TextDecoration.lineThrough : null,
-                      color: subtask.isCompleted ? Colors.grey : textColor,
-                    ),
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.drag_handle, color: Colors.grey.shade400),
-                      IconButton(
-                        icon: const Icon(Icons.delete_outline, color: Colors.red),
-                        onPressed: () => _deleteSubtask(index),
+                      PulseAnimation(
+                        child: Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                AppColors.cyan.withOpacity(0.1),
+                                AppColors.purple.withOpacity(0.1),
+                              ],
+                            ),
+                            shape: BoxShape.circle,
+                          ),
+                          child: ShaderMask(
+                            shaderCallback: (bounds) => AppGradients.secondary.createShader(bounds),
+                            child: const Icon(Icons.checklist_rounded, size: 48, color: Colors.white),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'No subtasks yet',
+                        style: AppTextStyles.subtitle.copyWith(color: AppColors.charcoal),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Break down your task into smaller steps',
+                        style: AppTextStyles.caption.copyWith(color: AppColors.grey),
                       ),
                     ],
                   ),
+                )
+              : ReorderableListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  itemCount: _subtasks.length,
+                  onReorder: (oldIndex, newIndex) {
+                    setState(() {
+                      if (newIndex > oldIndex) newIndex--;
+                      final item = _subtasks.removeAt(oldIndex);
+                      _subtasks.insert(newIndex, item);
+                    });
+                  },
+                  itemBuilder: (context, index) {
+                    final subtask = _subtasks[index];
+                    return Container(
+                      key: ValueKey(subtask.id),
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: subtask.isCompleted
+                              ? [
+                                  AppColors.cyan.withOpacity(0.1),
+                                  AppColors.cyan.withOpacity(0.05),
+                                ]
+                              : [
+                                  Colors.white,
+                                  Colors.grey.shade50,
+                                ],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: AppShadows.small,
+                      ),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        leading: GestureDetector(
+                          onTap: () => _toggleSubtask(index),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: subtask.isCompleted ? AppGradients.secondary : null,
+                              border: subtask.isCompleted
+                                  ? null
+                                  : Border.all(color: AppColors.cyan, width: 2),
+                              boxShadow: subtask.isCompleted
+                                  ? [
+                                      BoxShadow(
+                                        color: AppColors.cyan.withOpacity(0.4),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: subtask.isCompleted
+                                ? const Icon(Icons.check_rounded, size: 16, color: Colors.white)
+                                : null,
+                          ),
+                        ),
+                        title: Text(
+                          subtask.title,
+                          style: AppTextStyles.body.copyWith(
+                            decoration: subtask.isCompleted ? TextDecoration.lineThrough : null,
+                            color: subtask.isCompleted ? AppColors.grey : AppColors.charcoal,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.drag_handle_rounded, color: AppColors.grey.withOpacity(0.5)),
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: () => _deleteSubtask(index),
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
         ),
       ],
     );
   }
 
-  Widget _buildDateTimeSelector(BuildContext context, String value, VoidCallback onTap, IconData icon) {
+  Widget _buildDateTimeSelector(BuildContext context, String value, VoidCallback onTap, IconData icon, Gradient gradient) {
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade300),
+          gradient: LinearGradient(
+            colors: [
+              Colors.white,
+              (gradient as LinearGradient).colors.first.withOpacity(0.1),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: AppShadows.small,
         ),
         child: Row(
           children: [
-            Icon(icon, size: 18, color: primaryColor),
-            const SizedBox(width: 8),
-            Text(
-              value,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: textColor),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: gradient,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: (gradient).colors.first.withOpacity(0.3),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(icon, size: 16, color: Colors.white),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                value,
+                style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
@@ -474,38 +776,51 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
 
   Widget _buildRecurrenceSelector() {
     return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+      spacing: 10,
+      runSpacing: 10,
       children: RecurrenceType.values.map((type) {
         final isSelected = _recurrenceType == type;
-        return FilterChip(
-          label: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(type.icon, size: 16, color: isSelected ? primaryColor : textColor),
-              const SizedBox(width: 4),
-              Text(type.displayName),
-            ],
-          ),
-          selected: isSelected,
-          onSelected: (selected) {
-            if (selected) {
-              setState(() {
-                _recurrenceType = type;
-              });
-            }
+        return GestureDetector(
+          onTap: () {
+            setState(() {
+              _recurrenceType = type;
+            });
           },
-          backgroundColor: Colors.white,
-          selectedColor: primaryColor.withOpacity(0.1),
-          labelStyle: TextStyle(
-            color: isSelected ? primaryColor : textColor,
-            fontWeight: FontWeight.bold,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-            side: BorderSide(
-              color: isSelected ? primaryColor : Colors.grey.shade300,
-              width: 1,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              gradient: isSelected ? AppGradients.aurora : null,
+              color: isSelected ? null : Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: AppColors.purple.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : AppShadows.small,
+              border: isSelected ? null : Border.all(color: Colors.grey.shade200),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  type.icon,
+                  size: 18,
+                  color: isSelected ? Colors.white : AppColors.charcoal,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  type.displayName,
+                  style: AppTextStyles.caption.copyWith(
+                    color: isSelected ? Colors.white : AppColors.charcoal,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
           ),
         );
@@ -515,38 +830,51 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
 
   Widget _buildCategoryChips() {
     return Wrap(
-      spacing: 8.0,
-      runSpacing: 8.0,
+      spacing: 10.0,
+      runSpacing: 10.0,
       children: TaskCategory.values.map((category) {
         final isSelected = _category == category;
-        return FilterChip(
-          label: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(category.icon, size: 18, color: isSelected ? primaryColor : textColor),
-              const SizedBox(width: 5),
-              Text(category.toString().split('.').last.toUpperCase()),
-            ],
-          ),
-          selected: isSelected,
-          onSelected: (selected) {
-            if (selected) {
-              setState(() {
-                _category = category;
-              });
-            }
+        return GestureDetector(
+          onTap: () {
+            setState(() {
+              _category = category;
+            });
           },
-          backgroundColor: Colors.white,
-          selectedColor: primaryColor.withOpacity(0.1),
-          labelStyle: TextStyle(
-            color: isSelected ? primaryColor : textColor,
-            fontWeight: FontWeight.bold,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-            side: BorderSide(
-              color: isSelected ? primaryColor : Colors.grey.shade300,
-              width: 1,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              gradient: isSelected ? AppGradients.primary : null,
+              color: isSelected ? null : Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: AppColors.coral.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : AppShadows.small,
+              border: isSelected ? null : Border.all(color: Colors.grey.shade200),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  category.icon,
+                  size: 18,
+                  color: isSelected ? Colors.white : AppColors.charcoal,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  category.toString().split('.').last.toUpperCase(),
+                  style: AppTextStyles.caption.copyWith(
+                    color: isSelected ? Colors.white : AppColors.charcoal,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
           ),
         );
@@ -555,46 +883,71 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
   }
 
   Widget _buildPriorityChips() {
+    final priorityGradients = {
+      TaskPriority.low: [const Color(0xFF4CAF50), const Color(0xFF8BC34A)],
+      TaskPriority.medium: [const Color(0xFFFF9800), const Color(0xFFFFB74D)],
+      TaskPriority.high: [const Color(0xFFF44336), const Color(0xFFE57373)],
+    };
+    
     return Wrap(
-      spacing: 8.0,
-      runSpacing: 8.0,
+      spacing: 10.0,
+      runSpacing: 10.0,
       children: TaskPriority.values.map((priority) {
         final isSelected = _priority == priority;
-        return FilterChip(
-          label: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: priority.color,
-                ),
-              ),
-              const SizedBox(width: 5),
-              Text(priority.toString().split('.').last.toUpperCase()),
-            ],
-          ),
-          selected: isSelected,
-          onSelected: (selected) {
-            if (selected) {
-              setState(() {
-                _priority = priority;
-              });
-            }
+        final colors = priorityGradients[priority]!;
+        
+        return GestureDetector(
+          onTap: () {
+            setState(() {
+              _priority = priority;
+            });
           },
-          backgroundColor: Colors.white,
-          selectedColor: priority.color.withOpacity(0.1),
-          labelStyle: TextStyle(
-            color: isSelected ? priority.color.darken(0.2) : textColor,
-            fontWeight: FontWeight.bold,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-            side: BorderSide(
-              color: isSelected ? priority.color : Colors.grey.shade300,
-              width: 1,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              gradient: isSelected
+                  ? LinearGradient(colors: colors)
+                  : null,
+              color: isSelected ? null : Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: colors.first.withOpacity(0.4),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : AppShadows.small,
+              border: isSelected ? null : Border.all(color: Colors.grey.shade200),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isSelected ? Colors.white : priority.color,
+                    boxShadow: [
+                      BoxShadow(
+                        color: priority.color.withOpacity(0.5),
+                        blurRadius: 4,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  priority.toString().split('.').last.toUpperCase(),
+                  style: AppTextStyles.caption.copyWith(
+                    color: isSelected ? Colors.white : AppColors.charcoal,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
           ),
         );
@@ -605,52 +958,201 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.task == null ? 'Add Task' : 'Edit Task'),
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Basic Info', icon: Icon(Icons.info_outline)),
-            Tab(text: 'Subtasks', icon: Icon(Icons.checklist)),
-          ],
-        ),
-      ),
-      body: Form(
-        key: _formKey,
-        child: TabBarView(
-          controller: _tabController,
-          children: [
-            _buildBasicInfoTab(),
-            _buildSubtasksTab(),
-          ],
-        ),
+      backgroundColor: AppColors.background,
+      body: Stack(
+        children: [
+          // Background gradient
+          Positioned(
+            top: -100,
+            left: -100,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.coral.withOpacity(0.2),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 200,
+            right: -80,
+            child: Container(
+              width: 200,
+              height: 200,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.cyan.withOpacity(0.15),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          
+          // Main content
+          SafeArea(
+            child: Column(
+              children: [
+                // Custom AppBar
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: AppShadows.small,
+                          ),
+                          child: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: ShaderMask(
+                          shaderCallback: (bounds) => AppGradients.primary.createShader(bounds),
+                          child: Text(
+                            widget.task == null ? 'Create Task' : 'Edit Task',
+                            style: AppTextStyles.heading2.copyWith(color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Tab Bar
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: AppShadows.small,
+                    ),
+                    child: TabBar(
+                      controller: _tabController,
+                      indicator: BoxDecoration(
+                        gradient: AppGradients.primary,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.coral.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      dividerColor: Colors.transparent,
+                      labelColor: Colors.white,
+                      unselectedLabelColor: AppColors.grey,
+                      labelStyle: AppTextStyles.caption.copyWith(fontWeight: FontWeight.bold),
+                      tabs: const [
+                        Tab(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.info_outline_rounded, size: 18),
+                              SizedBox(width: 8),
+                              Text('Basic Info'),
+                            ],
+                          ),
+                        ),
+                        Tab(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.checklist_rounded, size: 18),
+                              SizedBox(width: 8),
+                              Text('Subtasks'),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // Tab Content
+                Expanded(
+                  child: Form(
+                    key: _formKey,
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        _buildBasicInfoTab(),
+                        _buildSubtasksTab(),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: Colors.white,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(30),
+            topRight: Radius.circular(30),
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 20,
               offset: const Offset(0, -5),
             ),
           ],
         ),
-        child: CustomButton(
-          text: 'Save Task',
-          onPressed: _saveTask,
+        child: SafeArea(
+          top: false,
+          child: GestureDetector(
+            onTap: _saveTask,
+            child: Container(
+              height: 56,
+              decoration: BoxDecoration(
+                gradient: AppGradients.primary,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.coral.withOpacity(0.4),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.save_rounded, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Save Task',
+                    style: AppTextStyles.button.copyWith(color: Colors.white),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
-  }
-}
-
-extension ColorExtension on Color {
-  Color darken([double amount = .1]) {
-    assert(amount >= 0 && amount <= 1);
-    final hsl = HSLColor.fromColor(this);
-    final hslDark = hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0));
-    return hslDark.toColor();
   }
 }
