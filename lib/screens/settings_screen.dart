@@ -498,9 +498,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           child: Column(
                             children: [
                               Container(
-                                padding: const EdgeInsets.all(16),
+                                width: 70,
+                                height: 70,
                                 decoration: BoxDecoration(
-                                  gradient: AppGradients.primary,
                                   borderRadius: BorderRadius.circular(20),
                                   boxShadow: [
                                     BoxShadow(
@@ -510,7 +510,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     ),
                                   ],
                                 ),
-                                child: const Icon(Icons.task_alt_rounded, color: Colors.white, size: 32),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: Image.asset(
+                                    'assets/images/logo.png',
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
                               ),
                               const SizedBox(height: 16),
                               Text('TaskAI', style: AppTextStyles.heading3.copyWith(
