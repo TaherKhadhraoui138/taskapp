@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'screens/splash_screen.dart';
 import 'providers/theme_provider.dart';
+import 'providers/notification_settings_provider.dart';
 import 'core/app_theme.dart';
 import 'services/notification_service.dart';
 
@@ -75,8 +76,11 @@ void main() async {
   await NotificationService().initialize();
 
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => ThemeProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationSettingsProvider()),
+      ],
       child: const TaskManagerApp(),
     ),
   );
