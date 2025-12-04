@@ -129,9 +129,9 @@ class AboutScreen extends StatelessWidget {
                                 ),
                               ),
                               Container(
-                                padding: const EdgeInsets.all(24),
+                                width: 100,
+                                height: 100,
                                 decoration: BoxDecoration(
-                                  gradient: AppGradients.primary,
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
@@ -141,10 +141,11 @@ class AboutScreen extends StatelessWidget {
                                     ),
                                   ],
                                 ),
-                                child: const Icon(
-                                  Icons.task_alt_rounded,
-                                  size: 56,
-                                  color: Colors.white,
+                                child: ClipOval(
+                                  child: Image.asset(
+                                    'assets/images/logo.png',
+                                    fit: BoxFit.cover,
+                                  ),
                                 ),
                               ),
                             ],
