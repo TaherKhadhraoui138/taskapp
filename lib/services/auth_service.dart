@@ -57,9 +57,16 @@ class AuthService {
     }
   }
 
-  // Get current user
+  // Get current user (attend que Firebase Auth ait restauré l'état)
   Future<User?> getCurrentUser() async {
-    final fb_auth.User? fbUser = _auth.currentUser;
+    // Attendre que Firebase Auth ait terminé de restaurer l'état
+    fb_auth.User? fbUser = _auth.currentUser;
+
+    // Si null, attendre le premier événement authStateChanges
+    if (fbUser == null) {
+      fbUser = await _auth.authStateChanges().first;
+    }
+
     if (fbUser == null) return null;
 
     final doc = await _firestore.collection('users').doc(fbUser.uid).get();

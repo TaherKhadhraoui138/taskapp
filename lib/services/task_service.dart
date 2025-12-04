@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/task.dart';
-import 'notification_service.dart';
 
 class TaskService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -66,18 +65,11 @@ class TaskService {
   Future<void> toggleTaskCompletion(Task task) async {
     if (_currentUserId == null) return;
 
-    final wasCompleted = task.isCompleted;
     await _firestore
         .collection('users')
         .doc(_currentUserId)
         .collection('tasks')
         .doc(task.id)
         .update({'isCompleted': !task.isCompleted});
-
-    // Create notification when task is completed
-    if (!wasCompleted) {
-      final notificationService = NotificationService();
-      await notificationService.createTaskCompletedNotification(task);
-    }
   }
 }

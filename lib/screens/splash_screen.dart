@@ -107,9 +107,12 @@ class _SplashScreenState extends State<SplashScreen>
 
   void _checkAuthStatus() async {
     final authService = AuthService();
-    final user = await authService.getCurrentUser();
 
+    // Attendre un minimum pour les animations
     await Future.delayed(const Duration(milliseconds: 2500));
+
+    // Attendre que Firebase Auth ait restauré l'état d'authentification
+    final user = await authService.getCurrentUser();
 
     if (mounted) {
       if (user != null) {

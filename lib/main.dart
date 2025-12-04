@@ -7,6 +7,7 @@ import 'firebase_options.dart';
 import 'screens/splash_screen.dart';
 import 'providers/theme_provider.dart';
 import 'core/app_theme.dart';
+import 'services/notification_service.dart';
 
 // Legacy color exports for backward compatibility
 const Color primaryColor = AppColors.primaryStart;
@@ -49,7 +50,7 @@ class TaskManagerApp extends StatelessWidget {
             Locale('en', ''),
             Locale('fr', ''),
           ],
-          locale: const Locale('fr', ''),
+          locale: const Locale('en', ''),
           home: const SplashScreen(),
         );
       },
@@ -69,6 +70,10 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // Initialize notification service
+  await NotificationService().initialize();
+
   runApp(
     ChangeNotifierProvider(
       create: (_) => ThemeProvider(),

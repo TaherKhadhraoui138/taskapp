@@ -13,7 +13,6 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _notifications = true;
 
   @override
   Widget build(BuildContext context) {
@@ -162,77 +161,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       const SizedBox(height: 28),
                       
-                      // Notifications section
-                      SlideAnimation(
-                        delay: const Duration(milliseconds: 150),
-                        child: _buildSectionHeader('Notifications', Icons.notifications_rounded, AppGradients.secondary),
-                      ),
-                      const SizedBox(height: 16),
-                      SlideAnimation(
-                        delay: const Duration(milliseconds: 200),
-                        child: _buildSettingCard(
-                          isDark: isDark,
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  gradient: _notifications
-                                      ? AppGradients.secondary
-                                      : LinearGradient(colors: [AppColors.grey, AppColors.grey.withOpacity(0.8)]),
-                                  borderRadius: BorderRadius.circular(14),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: (_notifications ? AppColors.cyan : AppColors.grey)
-                                          .withOpacity(0.3),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Icon(
-                                  _notifications
-                                      ? Icons.notifications_active_rounded
-                                      : Icons.notifications_off_rounded,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('Push Notifications', style: AppTextStyles.subtitle.copyWith(
-                                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                                    )),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Receive task reminders and updates',
-                                      style: AppTextStyles.caption.copyWith(color: AppColors.grey),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Switch.adaptive(
-                                value: _notifications,
-                                onChanged: (val) => setState(() => _notifications = val),
-                                activeColor: AppColors.cyan,
-                                activeTrackColor: AppColors.cyan.withOpacity(0.3),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 28),
-                      
                       // About section
                       SlideAnimation(
-                        delay: const Duration(milliseconds: 250),
+                        delay: const Duration(milliseconds: 150),
                         child: _buildSectionHeader('About', Icons.info_rounded, AppGradients.aurora),
                       ),
                       const SizedBox(height: 16),
                       SlideAnimation(
-                        delay: const Duration(milliseconds: 300),
+                        delay: const Duration(milliseconds: 200),
                         child: _buildSettingCard(
                           isDark: isDark,
                           child: Column(

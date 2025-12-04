@@ -1,6 +1,5 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../services/notification_service.dart';
 import '../core/app_theme.dart';
 
 class CustomBottomNavBar extends StatefulWidget {
@@ -26,7 +25,6 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar>
     Icons.home_rounded,
     Icons.bar_chart_rounded,
     Icons.calendar_today_rounded,
-    Icons.notifications_rounded,
     Icons.person_rounded,
   ];
 
@@ -34,7 +32,6 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar>
     Icons.home_filled,
     Icons.bar_chart_rounded,
     Icons.calendar_today_rounded,
-    Icons.notifications_rounded,
     Icons.person_rounded,
   ];
 
@@ -42,7 +39,6 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar>
     'Home',
     'Stats',
     'Calendar',
-    'Alerts',
     'Profile',
   ];
 
@@ -54,7 +50,7 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar>
       duration: const Duration(milliseconds: 300),
     );
     
-    _animations = List.generate(5, (index) {
+    _animations = List.generate(4, (index) {
       return Tween<double>(begin: 1.0, end: 1.0).animate(_controller);
     });
   }
@@ -67,7 +63,6 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar>
 
   @override
   Widget build(BuildContext context) {
-    final notificationService = NotificationService();
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
     return Container(
@@ -99,7 +94,7 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar>
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: List.generate(5, (index) {
+              children: List.generate(4, (index) {
                 final isSelected = widget.selectedIndex == index;
                 
                 return GestureDetector(
@@ -137,80 +132,14 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar>
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Icon with notification badge for index 3
-                          index == 3
-                              ? StreamBuilder<int>(
-                                  stream: notificationService.getUnreadCount(),
-                                  builder: (context, snapshot) {
-                                    final unreadCount = snapshot.data ?? 0;
-                                    return Stack(
-                                      clipBehavior: Clip.none,
-                                      children: [
-                                        Icon(
-                                          isSelected ? _selectedIcons[index] : _icons[index],
-                                          color: isSelected
-                                              ? Colors.white
-                                              : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight),
-                                          size: 24,
-                                        ),
-                                        if (unreadCount > 0)
-                                          Positioned(
-                                            right: -8,
-                                            top: -8,
-                                            child: TweenAnimationBuilder<double>(
-                                              tween: Tween(begin: 0.0, end: 1.0),
-                                              duration: const Duration(milliseconds: 300),
-                                              curve: Curves.elasticOut,
-                                              builder: (context, value, child) {
-                                                return Transform.scale(
-                                                  scale: value,
-                                                  child: child,
-                                                );
-                                              },
-                                              child: Container(
-                                                padding: const EdgeInsets.all(4),
-                                                constraints: const BoxConstraints(
-                                                  minWidth: 18,
-                                                  minHeight: 18,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  gradient: AppGradients.error,
-                                                  borderRadius: BorderRadius.circular(10),
-                                                  border: Border.all(
-                                                    color: isDark ? AppColors.cardDark : Colors.white,
-                                                    width: 2,
-                                                  ),
-                                                  boxShadow: [
-                                                    BoxShadow(
-                                                      color: AppColors.errorStart.withOpacity(0.3),
-                                                      blurRadius: 6,
-                                                    ),
-                                                  ],
-                                                ),
-                                                child: Text(
-                                                  unreadCount > 99 ? '99+' : unreadCount.toString(),
-                                                  style: const TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 10,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                  textAlign: TextAlign.center,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                      ],
-                                    );
-                                  },
-                                )
-                              : Icon(
-                                  isSelected ? _selectedIcons[index] : _icons[index],
-                                  color: isSelected
-                                      ? Colors.white
-                                      : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight),
-                                  size: 24,
-                                ),
-                          
+                          Icon(
+                            isSelected ? _selectedIcons[index] : _icons[index],
+                            color: isSelected
+                                ? Colors.white
+                                : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight),
+                            size: 24,
+                          ),
+
                           // Label (only for selected)
                           AnimatedSize(
                             duration: const Duration(milliseconds: 200),

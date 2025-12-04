@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/task.dart';
 import '../services/task_service.dart';
+import '../services/notification_service.dart';
 import '../widgets/custom_button.dart';
 import '../core/app_theme.dart';
 import '../core/animated_widgets.dart';
@@ -19,6 +20,7 @@ class AddTaskScreen extends StatefulWidget {
 class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final TaskService _taskService = TaskService();
+  final NotificationService _notificationService = NotificationService();
   final TextEditingController _subtaskController = TextEditingController();
 
   late String _title;
@@ -169,6 +171,13 @@ class _AddTaskScreenState extends State<AddTaskScreen> with SingleTickerProvider
         await _taskService.addTask(newTask);
       } else {
         await _taskService.updateTask(newTask);
+        // Cancel old notification if task is updated
+        await _notificationService.cancelScheduledNotification(newTask.id);
+      }
+
+      // Schedule notification 30 min before deadline
+      if (_hasDeadline && newTask.deadline != null) {
+        await _notificationService.scheduleDeadlineNotification(newTask);
       }
 
       if (mounted) {

@@ -34,6 +34,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   List<Task> _filteredTasks = [];
   String _currentFilter = 'All';
   int _selectedIndex = 0;
+  int _unreadNotificationsCount = 0;
   late PageController _pageController;
   bool _isSearching = false;
   String _searchQuery = '';
@@ -46,11 +47,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _loadTasks();
+    _loadUnreadNotificationsCount();
     _pageController = PageController(initialPage: _selectedIndex);
     _searchController.addListener(_onSearchChanged);
 
-    // Start the notification service
-    _notificationService.startNotificationService();
 
     _fabAnimationController = AnimationController(
       vsync: this,
@@ -68,7 +68,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _pageController.dispose();
     _searchController.dispose();
     _fabAnimationController.dispose();
-    _notificationService.stopNotificationService();
     super.dispose();
   }
 
@@ -85,6 +84,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       _allTasks = tasks;
       _filterTasks(_currentFilter);
     });
+  }
+
+  Future<void> _loadUnreadNotificationsCount() async {
+    final count = await _notificationService.getUnreadCount();
+    setState(() {
+      _unreadNotificationsCount = count;
+    });
+  }
+
+  void _navigateToNotifications() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const NotificationsScreen()),
+    );
+    _loadUnreadNotificationsCount();
   }
 
   void _filterTasks(String filter) {
@@ -146,6 +159,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void _toggleTaskCompletion(Task task) async {
     final updatedTask = task.copyWith(isCompleted: !task.isCompleted);
     await _taskService.updateTask(updatedTask);
+
+    // Send notification if task is completed
+    if (updatedTask.isCompleted) {
+      await _notificationService.sendTaskCompletedNotification(updatedTask);
+      _loadUnreadNotificationsCount();
+    }
+
     _loadTasks();
 
     if (mounted) {
@@ -362,43 +382,102 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Hello, ${widget.user.name.split(' ').first} 👋',
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                  letterSpacing: -0.5,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _getGreeting(),
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.white.withOpacity(0.85),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(
-                              'Hello, ${widget.user.name.split(' ').first} 👋',
-                              style: const TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                                letterSpacing: -0.5,
+                            // Notification button with badge
+                            GestureDetector(
+                              onTap: _navigateToNotifications,
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Stack(
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    const Icon(
+                                      Icons.notifications_outlined,
+                                      color: Colors.white,
+                                      size: 22,
+                                    ),
+                                    if (_unreadNotificationsCount > 0)
+                                      Positioned(
+                                        right: -6,
+                                        top: -6,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: const BoxDecoration(
+                                            color: Colors.red,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          constraints: const BoxConstraints(
+                                            minWidth: 16,
+                                            minHeight: 16,
+                                          ),
+                                          child: Text(
+                                            _unreadNotificationsCount > 9
+                                                ? '9+'
+                                                : _unreadNotificationsCount.toString(),
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _getGreeting(),
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.white.withOpacity(0.85),
-                                fontWeight: FontWeight.w500,
+                            const SizedBox(width: 10),
+                            GestureDetector(
+                              onTap: () => _onItemTapped(3),
+                              child: Container(
+                                padding: const EdgeInsets.all(2),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.white, width: 2),
+                                ),
+                                child: CircleAvatar(
+                                  radius: 18,
+                                  backgroundImage: NetworkImage(widget.user.profilePictureUrl),
+                                  backgroundColor: Colors.white.withOpacity(0.2),
+                                ),
                               ),
                             ),
                           ],
-                        ),
-                        GestureDetector(
-                          onTap: () => _onItemTapped(4),
-                          child: Container(
-                            padding: const EdgeInsets.all(3),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2),
-                            ),
-                            child: CircleAvatar(
-                              radius: 24,
-                              backgroundImage: NetworkImage(widget.user.profilePictureUrl),
-                              backgroundColor: Colors.white.withOpacity(0.2),
-                            ),
-                          ),
                         ),
                       ],
                     ),
@@ -755,7 +834,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           _buildTaskScreen(),
           const StatsScreen(),
           const CalendarScreen(),
-          const NotificationsScreen(),
           ProfileScreen(user: widget.user),
         ],
       ),
